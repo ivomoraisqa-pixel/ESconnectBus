@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Totem SerraBus</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/totem.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+<body>
+  <div class="totem-container">
+    <!-- Header -->
+    <header class="totem-header">
+      <div class="city-info">
+        <div class="shield">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2L3 5V11C3 16.55 6.84 21.74 12 23C17.16 21.74 21 16.55 21 11V5L12 2Z" fill="#2D9B5A"/>
+            <path d="M12 22.9V2L3 5V11C3 16.5 6.8 21.7 12 22.9Z" fill="#238048"/>
+            <circle cx="12" cy="11" r="4" fill="white"/>
+          </svg>
+          <div style="display:flex; flex-direction:column;">
+            <span class="prefeitura">Prefeitura da</span>
+            <span class="serra" id="config-cidade">SERRA</span>
+          </div>
+        </div>
+        <span class="location" id="config-local">Terminal de Laranjeiras</span>
+      </div>
+      <div class="time-weather">
+        <span class="time" id="clock">14:32</span>
+        <span class="date" id="date">Qui, 25 de Julho</span>
+        <div class="weather">
+          <span>28°C</span>
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        </div>
+        <span class="air-quality">Qualidade do Ar: Boa</span>
+      </div>
+    </header>
+
+    <!-- Bus Section -->
+    <div class="totem-bus-section">
+      PRÓXIMOS ÔNIBUS
+    </div>
+    <div class="bus-list" id="dynamic-bus-list">
+      <div style="padding: 20px; text-align: center; color: rgba(255,255,255,0.7); font-size: 14px;">
+        Conectando ao Intelligent Transit Engine...
+      </div>
+    </div>
+
+    <!-- Map Section -->
+    <div class="totem-map">
+      <h3>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        MAPA DE LINHAS
+      </h3>
+      <div id="totem-map" style="width: 100%; height: 100%; background: #1a1a1a; border-radius: 12px; overflow: hidden; position: relative;"></div>
+    </div>
+
+    <!-- Features -->
+    <div class="totem-features">
+      <div class="totem-feature">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <span>Tempo Real</span>
+      </div>
+      <div class="totem-feature">
+        <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        <span>Confiável</span>
+      </div>
+      <div class="totem-feature">
+        <svg viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
+        <span>Conectado</span>
+      </div>
+    </div>
+
+    <!-- Info Bar -->
+    <div class="totem-info-bar">
+      <div class="totem-info-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        <span>Informativos<br>Prefeitura</span>
+      </div>
+      <div class="totem-info-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        <span>Fale Conosco<br>156</span>
+      </div>
+      <div class="totem-info-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <span>Segurança<br>Garantida</span>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="totem-footer">
+      <div class="brand">
+        <span class="brand-bold">SerraBus</span> <span class="brand-light">CONECT</span>
+      </div>
+      <div class="wifi">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
+        <div class="wifi-text">
+          <span class="wifi-strong">Wi-Fi Grátis</span>
+          <span>Conecte-se</span>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    function updateClock() {
+      const now = new Date();
+      const time = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      
+      const diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+      const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+      
+      const dateStr = `${diasSemana[now.getDay()]}, ${now.getDate()} de ${meses[now.getMonth()]}`;
+      
+      document.getElementById('clock').textContent = time;
+      document.getElementById('date').textContent = dateStr;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    let API_URL = '';
+    const busListEl = document.getElementById('dynamic-bus-list');
+
+    // Inicializar Mapa Leaflet
+    const map = L.map('totem-map', { zoomControl: false, attributionControl: false }).setView([-20.2108, -40.2573], 15);
+    
+    // Base Map Premium Escuro
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      maxZoom: 19
+    }).addTo(map);
+
+    // Marcador do Totem
+    const totemIcon = L.divIcon({
+      className: 'totem-self-marker',
+      html: `<svg viewBox="0 0 24 24" style="width: 32px; height: 32px;" stroke="#2D9B5A" stroke-width="2" fill="#fff"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3" fill="#2D9B5A"/></svg>`,
+      iconSize: [32, 32],
+      iconAnchor: [16, 32]
+    });
+    const mapMarker = L.marker([-20.2108, -40.2573], {icon: totemIcon}).addTo(map);
+
+    let vehicleMarkers = {};
+
+    const busIconHtml = (line) => `
+      <div style="background: #3B82F6; color: white; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; border: 2px solid white; box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);">
+        ${line}
+      </div>
+    `;
+
+    async function initClient() {
+      try {
+        // Modo Web: Lê do LocalStorage ao invés de IPC do Electron
+        const tokenStr = localStorage.getItem('totem_config');
+        if (!tokenStr) {
+          // Se não estiver pareado, redireciona para a tela de PIN
+          window.location.href = 'setup_totem.html';
+          return;
+        }
+
+        const config = JSON.parse(tokenStr);
+        console.log("Totem Client Boot:", config);
+        
+        API_URL = `http://localhost:3000/api/v1/transport/totem/${config.totemId}/sync`;
+        
+        document.getElementById('config-cidade').textContent = (config.cidade || "SERRA").toUpperCase();
+        document.getElementById('config-local').textContent = "Ponto: " + config.nome;
+
+        // Injeta cores do tema vindos da Central
+        if(config.themeColor) {
+           document.querySelector('.totem-bus-section').style.backgroundColor = config.themeColor;
+           // Atualiza cores dinâmicas no SVG do Header
+           document.querySelectorAll('.shield path').forEach(p => {
+             if(p.getAttribute('fill') === '#2D9B5A') p.setAttribute('fill', config.themeColor);
+           });
+        }
+        
+        // Inicia Polling dinâmico da Central (ônibus + propagandas)
+        fetchTransitData();
+        setInterval(fetchTransitData, 5000);
+
+        // Força CSS Kiosk: a lógica de giro e proporção agora vive puramente no totem.css
+        // para garantir suporte perfeito a monitores horizontais simulando verticais.
+
+      } catch(err) {
+        console.error("Erro ao iniciar totem client", err);
+      }
+    }
+    async function fetchTransitData() {
+      let data = null;
+      try {
+        if(API_URL) {
+          const res = await fetch(API_URL);
+          if(res.ok) {
+            data = await res.json();
+          }
+        }
+      } catch (err) {
+        console.warn("API indisponível. Ativando Modo Offline (Fallback)...");
+      }
+
+      // Fallback robusto caso a API Node esteja desligada ou o Sync falhe
+      if (!data || !data.vehicles) {
+        data = {
+          vehicles: [
+            { vehicle_id: 'V-MOCK1', line: '507', distance: 1.2, eta: 3 },
+            { vehicle_id: 'V-MOCK2', line: '523', distance: 2.5, eta: 6 },
+            { vehicle_id: 'V-MOCK3', line: '851', distance: 4.1, eta: 12 }
+          ],
+          configSync: {
+            announcements: [{ id: 1, text: 'Serra Cidade Inteligente' }],
+            campaign: { title: 'Campanha Padrão', mediaUrl: 'https://images.unsplash.com/photo-1542314831-c6a420325142?auto=format&fit=crop&q=80&w=1080', type: 'image' }
+          }
+        };
+      }
+      
+      // ---------------------------------------------------------
+      // PROCESSAMENTO DE COMANDOS REMOTOS (MDM)
+      // ---------------------------------------------------------
+      if (data.commands && data.commands.length > 0) {
+        data.commands.forEach(cmd => {
+          console.log("Comando Remoto Recebido:", cmd.comando);
+          if (cmd.comando === 'REBOOT' || cmd.comando === 'UPDATE' || cmd.comando === 'RELOAD' || cmd.comando === 'CLEAR_CACHE') {
+            // Em ambiente kiosk web, a forma de reiniciar a interface é via reload total
+            setTimeout(() => {
+              window.location.reload(true);
+            }, 1000);
+          } else if (cmd.comando === 'MAINTENANCE_MODE' || cmd.comando === 'SHUTDOWN') {
+            document.body.innerHTML = `
+              <div style="background:#1A1A2E; width:100vw; height:100vh; display:flex; align-items:center; justify-content:center; flex-direction:column; color:white; font-family:Inter, sans-serif;">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                <h1 style="margin-top:24px; font-size:32px;">${cmd.comando === 'SHUTDOWN' ? 'TERMINAL DESLIGADO' : 'SISTEMA EM MANUTENÇÃO'}</h1>
+                <p style="color:#9CA3AF; margin-top:12px; font-size:18px;">Retornaremos em breve.</p>
+              </div>
+            `;
+          }
+        });
+      }
+      // ---------------------------------------------------------
+      
+      // Atualiza Informativos na barra (Footer Info Bar)
+      if (data.configSync && data.configSync.announcements && data.configSync.announcements.length > 0) {
+        const infoBar = document.querySelector('.totem-info-bar');
+        const infosHTML = data.configSync.announcements.map(ann => `
+          <div class="totem-info-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            <span>${ann.text}</span>
+          </div>
+        `).join('');
+        
+        infoBar.innerHTML = infosHTML + `
+          <div class="totem-info-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <span>Segurança Garantida</span>
+          </div>
+        `;
+      }
+
+      // Renderiza Anúncios/Propaganda Dinâmica (Alternando com o Mapa se houver)
+      if (data.configSync && data.configSync.campaign) {
+        const adContainer = document.getElementById('ad-container-overlay');
+        if (!adContainer) {
+          const adHtml = `
+            <div id="ad-container-overlay" style="position: absolute; inset: 0; background: black; display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; transition: opacity 1s; pointer-events: none;">
+              <img id="ad-media-element" src="${data.configSync.campaign.mediaUrl}" style="width: 100%; height: 100%; object-fit: cover;" />
+              <div style="position: absolute; bottom: 20px; right: 20px; background: rgba(0,0,0,0.6); color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px;" id="ad-title-element">${data.configSync.campaign.title}</div>
+            </div>
+          `;
+          document.querySelector('.totem-map').insertAdjacentHTML('beforeend', adHtml);
+          
+          // Alternância entre Mapa e Propaganda a cada 10 segundos (Protegido contra vazamento de memória)
+          if (!window.adInterval) {
+            window.adInterval = setInterval(() => {
+              const overlay = document.getElementById('ad-container-overlay');
+              if (overlay) {
+                overlay.style.opacity = overlay.style.opacity === '1' ? '0' : '1';
+              }
+            }, 10000);
+          }
+        } else {
+          document.getElementById('ad-media-element').src = data.configSync.campaign.mediaUrl;
+          document.getElementById('ad-title-element').textContent = data.configSync.campaign.title;
+        }
+      }
+      
+      busListEl.innerHTML = ''; 
+
+      data.vehicles.forEach(v => {
+        busListEl.innerHTML += `
+          <div class="bus-item">
+            <div class="bus-number c-${v.line}" style="background-color: #3B82F6;">${v.line}</div>
+            <div class="bus-destination">Terminal Laranjeiras</div>
+            <div class="bus-meta">
+              <div class="bus-time">${v.eta.toString().padStart(2, '0')} MIN</div>
+              <div class="bus-distance">${v.distance}km</div>
+            </div>
+          </div>
+        `;
+
+        // Posição com ruído maior para simular movimento nítido (caminhando)
+        // Se a API mandasse coordenadas reais, usaríamos v.lat e v.lng
+        if(!vehicleMarkers[v.vehicle_id]) {
+           // Começa perto do terminal
+           vehicleMarkers[v.vehicle_id] = { lat: -20.2108 + (Math.random() - 0.5) * 0.015, lng: -40.2573 + (Math.random() - 0.5) * 0.015 };
+           
+           const icon = L.divIcon({
+            className: 'moving-bus-marker',
+            html: busIconHtml(v.line),
+            iconSize: [40, 40],
+            iconAnchor: [20, 20]
+          });
+          vehicleMarkers[v.vehicle_id].marker = L.marker([vehicleMarkers[v.vehicle_id].lat, vehicleMarkers[v.vehicle_id].lng], {icon}).addTo(map);
+        } else {
+          // Incrementa a posição para "andar" na tela
+          vehicleMarkers[v.vehicle_id].lat += (Math.random() - 0.5) * 0.001;
+          vehicleMarkers[v.vehicle_id].lng += (Math.random() - 0.5) * 0.001;
+          vehicleMarkers[v.vehicle_id].marker.setLatLng([vehicleMarkers[v.vehicle_id].lat, vehicleMarkers[v.vehicle_id].lng]); 
+        }
+      });
+    }
+
+    // Inicializa o Client ao invés de chamar fetchTransitData direto
+    initClient();
+  </script>
+</body>
+</html>

@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Serra SmartBus - Totem Management</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-tertiary": "#ffffff",
+                    "surface-variant": "#e1e3e4",
+                    "error-container": "#ffdad6",
+                    "on-secondary-fixed": "#2f1500",
+                    "on-tertiary-fixed-variant": "#00531a",
+                    "secondary-container": "#fd8b00",
+                    "surface-bright": "#f8f9fa",
+                    "tertiary": "#002507",
+                    "on-tertiary-fixed": "#002106",
+                    "secondary": "#904d00",
+                    "tertiary-fixed": "#83fc8e",
+                    "primary-container": "#003366",
+                    "surface-container-low": "#f3f4f5",
+                    "primary-fixed-dim": "#a7c8ff",
+                    "surface-container": "#edeeef",
+                    "surface-container-lowest": "#ffffff",
+                    "outline-variant": "#c3c6d1",
+                    "outline": "#737780",
+                    "inverse-primary": "#a7c8ff",
+                    "secondary-fixed-dim": "#ffb77d",
+                    "on-secondary-fixed-variant": "#6e3900",
+                    "on-primary-fixed-variant": "#1f477b",
+                    "on-secondary": "#ffffff",
+                    "on-surface": "#191c1d",
+                    "error": "#ba1a1a",
+                    "on-error": "#ffffff",
+                    "background": "#f8f9fa",
+                    "on-surface-variant": "#43474f",
+                    "inverse-surface": "#2e3132",
+                    "surface-dim": "#d9dadb",
+                    "surface": "#f8f9fa",
+                    "on-error-container": "#93000a",
+                    "surface-container-highest": "#e1e3e4",
+                    "on-primary": "#ffffff",
+                    "surface-tint": "#3a5f94",
+                    "primary": "#001e40",
+                    "inverse-on-surface": "#f0f1f2",
+                    "on-background": "#191c1d",
+                    "primary-fixed": "#d5e3ff",
+                    "on-primary-fixed": "#001b3c",
+                    "tertiary-container": "#003d11",
+                    "tertiary-fixed-dim": "#66df75",
+                    "on-primary-container": "#799dd6"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "sm": "12px",
+                    "margin-mobile": "16px",
+                    "lg": "48px",
+                    "gutter": "16px",
+                    "margin-desktop": "32px",
+                    "xs": "4px",
+                    "base": "8px",
+                    "md": "24px"
+            },
+            "fontFamily": {
+                    "title-md": ["Inter"],
+                    "headline-lg-mobile": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "mono-timer": ["Inter"],
+                    "headline-lg": ["Inter"],
+                    "display-lg": ["Inter"],
+                    "body-sm": ["Inter"],
+                    "label-caps": ["Inter"]
+            },
+            "fontSize": {
+                    "title-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "mono-timer": ["24px", {"lineHeight": "24px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                    "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #c3c6d1; border-radius: 10px; }
+        .glass-panel {
+            backdrop-filter: blur(8px);
+            background: rgba(255, 255, 255, 0.8);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-lg selection:bg-primary-fixed selection:text-on-primary-fixed overflow-hidden">
+<div class="flex h-screen w-full">
+<!-- SideNavBar -->
+<aside class="hidden md:flex flex-col h-full py-md px-sm bg-surface-container border-r border-outline-variant w-64 shrink-0">
+<div class="mb-lg px-base">
+<h1 class="font-title-md text-title-md font-bold text-primary">Serra Admin</h1>
+<p class="font-body-sm text-body-sm text-on-surface-variant opacity-70">Regional Operations</p>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-sm px-base py-sm font-label-caps text-label-caps text-on-surface-variant hover:bg-surface-container-highest transition-all cursor-pointer active:translate-x-1" href="#">
+<span class="material-symbols-outlined">dashboard</span> Dashboard
+                </a>
+<a class="flex items-center gap-sm px-base py-sm font-label-caps text-label-caps text-on-surface-variant hover:bg-surface-container-highest transition-all cursor-pointer active:translate-x-1" href="#">
+<span class="material-symbols-outlined">map</span> Live Map
+                </a>
+<!-- Active Tab -->
+<a class="flex items-center gap-sm px-base py-sm font-label-caps text-label-caps text-primary font-bold bg-primary-fixed transition-all cursor-pointer translate-x-1" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">important_devices</span> Totem Management
+                </a>
+<a class="flex items-center gap-sm px-base py-sm font-label-caps text-label-caps text-on-surface-variant hover:bg-surface-container-highest transition-all cursor-pointer active:translate-x-1" href="#">
+<span class="material-symbols-outlined">directions_bus</span> Fleet/Lines
+                </a>
+<a class="flex items-center gap-sm px-base py-sm font-label-caps text-label-caps text-on-surface-variant hover:bg-surface-container-highest transition-all cursor-pointer active:translate-x-1" href="#">
+<span class="material-symbols-outlined">analytics</span> AI Reports
+                </a>
+<a class="flex items-center gap-sm px-base py-sm font-label-caps text-label-caps text-on-surface-variant hover:bg-surface-container-highest transition-all cursor-pointer active:translate-x-1" href="#">
+<span class="material-symbols-outlined">settings</span> Settings
+                </a>
+</nav>
+<div class="mt-auto space-y-4">
+<button class="w-full bg-secondary text-on-secondary py-sm font-label-caps text-label-caps rounded transition-colors hover:brightness-110 active:scale-95">
+                    Emergency Alert
+                </button>
+<div class="pt-base border-t border-outline-variant space-y-1">
+<a class="flex items-center gap-sm px-base py-base font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-highest rounded" href="#">
+<span class="material-symbols-outlined">verified_user</span> System Status
+                    </a>
+<a class="flex items-center gap-sm px-base py-base font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-highest rounded" href="#">
+<span class="material-symbols-outlined">support_agent</span> Help
+                    </a>
+</div>
+</div>
+</aside>
+<!-- Main Content Wrapper -->
+<main class="flex-1 flex flex-col min-w-0 overflow-hidden">
+<!-- TopNavBar -->
+<header class="flex justify-between items-center w-full px-margin-desktop h-20 bg-surface border-b border-outline-variant shrink-0">
+<div class="flex items-center gap-md">
+<span class="font-headline-lg text-headline-lg font-bold text-primary">Serra SmartBus</span>
+<div class="hidden lg:flex relative items-center">
+<span class="material-symbols-outlined absolute left-sm text-outline">search</span>
+<input class="pl-10 pr-base py-xs bg-surface-container-low border border-outline-variant rounded-full text-body-sm focus:outline-none focus:ring-2 focus:ring-primary-container w-64 transition-all" placeholder="Search Totem ID or Location..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-md">
+<div class="hidden xl:flex items-center gap-xs px-sm py-xs bg-tertiary-fixed/20 text-on-tertiary-fixed-variant rounded-full">
+<span class="material-symbols-outlined text-[18px]">check_circle</span>
+<span class="font-label-caps text-label-caps">System Healthy</span>
+</div>
+<div class="flex items-center gap-base">
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary">cloud</span>
+<div class="h-8 w-[1px] bg-outline-variant"></div>
+<div class="flex items-center gap-sm cursor-pointer group">
+<div class="text-right">
+<p class="font-label-caps text-label-caps text-primary leading-none">Admin Profile</p>
+<p class="text-[10px] text-on-surface-variant uppercase tracking-widest mt-1">Super User</p>
+</div>
+<div class="w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center text-primary font-bold overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A clean professional headshot of a municipal technology administrator, focused expression, wearing a navy blue corporate uniform, background is a blurred high-tech operations control room with blue lighting and data screens. Modern light-mode corporate photography style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAXeh7Fz18ubUJXBurciHmD7lbNCd7qZMqElheIOamdc0ghOiTLsziIodRvOP54FMU2PBD0ATGtOOuKEXVRY7rO4u2rK7k45opsnqaIFBenRy1bWdlOlUyvCE_Lm6LeUAKqV_Jlp3MDbWBU8raitNR5lZ5GiIxrsnSRckVum1aejZcn5o9lsQvwoARhnJtbh-NcJ7GUJbVlYHyO-56d7A4m2fqbFFeppgzCtdfAbWZxq4ShW2cFodc36w"/>
+</div>
+</div>
+</div>
+</div>
+</header>
+<!-- Scrollable Canvas -->
+<div class="flex-1 overflow-y-auto p-margin-desktop space-y-gutter bg-surface-container-lowest">
+<div class="grid grid-cols-12 gap-gutter">
+<!-- Left: Inventory Table (Bento Style) -->
+<div class="col-span-12 lg:col-span-8 space-y-gutter">
+<div class="bg-surface border border-outline-variant p-base rounded-xl">
+<div class="px-base py-sm flex justify-between items-center border-b border-outline-variant mb-base">
+<h3 class="font-title-md text-title-md text-primary">Totem Inventory</h3>
+<div class="flex gap-base">
+<button class="p-xs hover:bg-surface-container rounded transition-colors"><span class="material-symbols-outlined">filter_list</span></button>
+<button class="p-xs hover:bg-surface-container rounded transition-colors"><span class="material-symbols-outlined">download</span></button>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full border-collapse">
+<thead>
+<tr class="text-left font-label-caps text-label-caps text-on-surface-variant bg-surface-container-low border-b border-outline-variant">
+<th class="px-base py-md">ID</th>
+<th class="px-base py-md">Location</th>
+<th class="px-base py-md">Status</th>
+<th class="px-base py-md">Signal</th>
+<th class="px-base py-md text-right">Action</th>
+</tr>
+</thead>
+<tbody class="font-body-sm text-body-sm divide-y divide-outline-variant">
+<tr class="hover:bg-primary-fixed/5 transition-colors cursor-pointer group">
+<td class="px-base py-md font-bold text-primary">TOT-4012</td>
+<td class="px-base py-md">Plaza Central - North Gate</td>
+<td class="px-base py-md">
+<span class="flex items-center gap-xs text-on-tertiary-container">
+<span class="w-2 h-2 rounded-full bg-on-tertiary-container animate-pulse"></span> Online
+                                                </span>
+</td>
+<td class="px-base py-md">
+<div class="flex gap-px items-end h-3 w-6">
+<div class="w-1 bg-on-tertiary-container h-[40%] rounded-t-sm"></div>
+<div class="w-1 bg-on-tertiary-container h-[60%] rounded-t-sm"></div>
+<div class="w-1 bg-on-tertiary-container h-[80%] rounded-t-sm"></div>
+<div class="w-1 bg-on-tertiary-container h-[100%] rounded-t-sm"></div>
+</div>
+</td>
+<td class="px-base py-md text-right">
+<button class="px-sm py-1 border border-primary text-primary font-label-caps text-[10px] rounded hover:bg-primary hover:text-white transition-all">MANAGE</button>
+</td>
+</tr>
+<tr class="hover:bg-primary-fixed/5 transition-colors cursor-pointer">
+<td class="px-base py-md font-bold text-primary">TOT-4028</td>
+<td class="px-base py-md">Bus Terminal B - Platform 4</td>
+<td class="px-base py-md">
+<span class="flex items-center gap-xs text-on-tertiary-container">
+<span class="w-2 h-2 rounded-full bg-on-tertiary-container"></span> Online
+                                                </span>
+</td>
+<td class="px-base py-md">
+<div class="flex gap-px items-end h-3 w-6">
+<div class="w-1 bg-on-tertiary-container h-[40%] rounded-t-sm"></div>
+<div class="w-1 bg-on-tertiary-container h-[60%] rounded-t-sm"></div>
+<div class="w-1 bg-outline-variant h-[80%] rounded-t-sm"></div>
+<div class="w-1 bg-outline-variant h-[100%] rounded-t-sm"></div>
+</div>
+</td>
+<td class="px-base py-md text-right">
+<button class="px-sm py-1 border border-primary text-primary font-label-caps text-[10px] rounded hover:bg-primary hover:text-white transition-all">MANAGE</button>
+</td>
+</tr>
+<tr class="bg-error-container/10 hover:bg-error-container/20 transition-colors cursor-pointer">
+<td class="px-base py-md font-bold text-error">TOT-4055</td>
+<td class="px-base py-md">West Avenue Subway Link</td>
+<td class="px-base py-md">
+<span class="flex items-center gap-xs text-error">
+<span class="w-2 h-2 rounded-full bg-error"></span> Offline
+                                                </span>
+</td>
+<td class="px-base py-md">
+<div class="flex gap-px items-end h-3 w-6">
+<div class="w-1 bg-outline-variant h-[40%] rounded-t-sm"></div>
+<div class="w-1 bg-outline-variant h-[60%] rounded-t-sm"></div>
+<div class="w-1 bg-outline-variant h-[80%] rounded-t-sm"></div>
+<div class="w-1 bg-outline-variant h-[100%] rounded-t-sm"></div>
+</div>
+</td>
+<td class="px-base py-md text-right">
+<button class="px-sm py-1 bg-error text-white font-label-caps text-[10px] rounded hover:brightness-110 transition-all">RECOVER</button>
+</td>
+</tr>
+<tr class="hover:bg-primary-fixed/5 transition-colors cursor-pointer">
+<td class="px-base py-md font-bold text-primary">TOT-4091</td>
+<td class="px-base py-md">Cultural Center - East Entrance</td>
+<td class="px-base py-md">
+<span class="flex items-center gap-xs text-secondary-container">
+<span class="w-2 h-2 rounded-full bg-secondary-container animate-pulse"></span> Updating
+                                                </span>
+</td>
+<td class="px-base py-md">
+<div class="flex gap-px items-end h-3 w-6">
+<div class="w-1 bg-on-tertiary-container h-[40%] rounded-t-sm"></div>
+<div class="w-1 bg-on-tertiary-container h-[60%] rounded-t-sm"></div>
+<div class="w-1 bg-on-tertiary-container h-[80%] rounded-t-sm"></div>
+<div class="w-1 bg-outline-variant h-[100%] rounded-t-sm"></div>
+</div>
+</td>
+<td class="px-base py-md text-right">
+<button class="px-sm py-1 border border-primary text-primary font-label-caps text-[10px] rounded hover:bg-primary hover:text-white transition-all">MANAGE</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Content Scheduler Preview -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-base">
+<div class="bg-surface border border-outline-variant rounded-xl p-base flex flex-col gap-base">
+<p class="font-label-caps text-label-caps text-on-surface-variant">Live Content: Zone A</p>
+<div class="flex-1 bg-on-surface rounded border border-outline h-32 overflow-hidden flex flex-col text-white p-base">
+<div class="flex justify-between items-start mb-base">
+<span class="text-[10px] font-bold">14:22</span>
+<span class="material-symbols-outlined text-sm">cloud</span>
+</div>
+<div class="space-y-1">
+<div class="flex justify-between items-center text-[10px]">
+<span>L6 Express</span>
+<span class="text-secondary-container">2 min</span>
+</div>
+<div class="flex justify-between items-center text-[10px]">
+<span>L12 Local</span>
+<span>8 min</span>
+</div>
+<div class="w-full h-1 bg-white/20 mt-xs rounded"></div>
+</div>
+</div>
+<button class="w-full py-xs border border-outline-variant text-[10px] font-label-caps hover:bg-surface-container rounded">REPLACE SLOT</button>
+</div>
+<div class="bg-surface border border-outline-variant rounded-xl p-base flex flex-col gap-base">
+<p class="font-label-caps text-label-caps text-on-surface-variant">Active Ad Campaign</p>
+<div class="flex-1 bg-surface-container rounded border border-outline h-32 overflow-hidden relative">
+<img class="w-full h-full object-cover" data-alt="A vibrant digital advertisement graphic for a city museum exhibition, showcasing ancient artifacts with modern typography. The design is clean, high-contrast, and optimized for public transit displays in a bright, modern municipal setting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD9FFq37EvEwJpdzHEb-0ciBwUZRb2KNUKpRGwUA96J4FE1SN8XHhSjRBtRelIF3A8mspTYBTIGQA_QDUSOojalA2dmM6D8Ma2Wpes3tpIK33MOvQnfjUuC7T5zMrVKBEbVaVKR5kAZC3SY2DIgO1rGz9JecE-bkovVaA-yq1EcPsQjbaeHbK2f6cYHqJcO3QsOdlsE_v4jzFOH0390uBzzSII2t5YWZSukkQJ9lEcWLclZlJR0AmEIMA"/>
+<div class="absolute bottom-0 left-0 right-0 bg-primary/80 text-white p-xs text-[8px] font-label-caps">MUSEUM EXPO 2024</div>
+</div>
+<button class="w-full py-xs border border-outline-variant text-[10px] font-label-caps hover:bg-surface-container rounded">EDIT ROTATION</button>
+</div>
+<div class="bg-surface border border-outline-variant rounded-xl p-base flex flex-col gap-base">
+<p class="font-label-caps text-label-caps text-on-surface-variant">Weather/Public Info</p>
+<div class="flex-1 bg-gradient-to-br from-primary-container to-primary rounded border border-outline h-32 flex flex-col items-center justify-center text-white">
+<span class="material-symbols-outlined text-4xl mb-xs">partly_cloudy_day</span>
+<span class="font-bold text-xl">24°C</span>
+<span class="text-[8px] font-label-caps opacity-80">Sunny Intervals</span>
+</div>
+<button class="w-full py-xs border border-outline-variant text-[10px] font-label-caps hover:bg-surface-container rounded">FORCE ALERT</button>
+</div>
+</div>
+</div>
+<!-- Right Column: Diagnostics & Controls -->
+<div class="col-span-12 lg:col-span-4 space-y-gutter">
+<!-- Diagnostic Card -->
+<div class="bg-primary text-white p-base rounded-xl border border-outline flex flex-col shadow-lg">
+<div class="flex justify-between items-start mb-md">
+<div>
+<p class="font-label-caps text-label-caps opacity-70">Active Unit</p>
+<h2 class="font-title-md text-title-md">TOT-4012 Diagnostics</h2>
+</div>
+<span class="material-symbols-outlined text-tertiary-fixed">analytics</span>
+</div>
+<div class="grid grid-cols-2 gap-md mb-md">
+<div class="space-y-base">
+<p class="text-[10px] font-label-caps opacity-60">CPU USAGE</p>
+<div class="flex items-center gap-base">
+<span class="font-mono-timer text-lg">42%</span>
+<div class="flex-1 h-1 bg-white/20 rounded overflow-hidden">
+<div class="h-full bg-tertiary-fixed w-[42%]"></div>
+</div>
+</div>
+</div>
+<div class="space-y-base">
+<p class="text-[10px] font-label-caps opacity-60">TEMPERATURE</p>
+<div class="flex items-center gap-base">
+<span class="font-mono-timer text-lg">38°C</span>
+<span class="material-symbols-outlined text-sm text-on-tertiary-container">thermostat</span>
+</div>
+</div>
+<div class="space-y-base">
+<p class="text-[10px] font-label-caps opacity-60">NETWORK SIGNAL</p>
+<div class="flex items-center gap-base">
+<span class="font-mono-timer text-lg">5G Full</span>
+<span class="material-symbols-outlined text-sm">network_wifi</span>
+</div>
+</div>
+<div class="space-y-base">
+<p class="text-[10px] font-label-caps opacity-60">ENERGY LOAD</p>
+<div class="flex items-center gap-base">
+<span class="font-mono-timer text-lg">0.8kW</span>
+<span class="material-symbols-outlined text-sm">bolt</span>
+</div>
+</div>
+</div>
+<div class="pt-base border-t border-white/10 mt-auto">
+<div class="flex justify-between items-center text-[10px] font-label-caps opacity-80">
+<span>Last Heartbeat: 4s ago</span>
+<span class="text-tertiary-fixed">SYSTEM STABLE</span>
+</div>
+</div>
+</div>
+<!-- Remote Control Panel -->
+<div class="bg-surface border border-outline-variant p-base rounded-xl">
+<h3 class="font-label-caps text-label-caps text-on-surface-variant mb-md px-xs">Remote Control Commands</h3>
+<div class="grid grid-cols-1 gap-base">
+<button class="flex items-center justify-between p-sm border border-outline-variant rounded hover:bg-surface-container transition-all group active:scale-95">
+<div class="flex items-center gap-base text-primary">
+<span class="material-symbols-outlined">restart_alt</span>
+<span class="font-label-caps text-label-caps">Restart System</span>
+</div>
+<span class="material-symbols-outlined text-outline group-hover:text-primary">chevron_right</span>
+</button>
+<button class="flex items-center justify-between p-sm border border-outline-variant rounded hover:bg-surface-container transition-all group active:scale-95">
+<div class="flex items-center gap-base text-primary">
+<span class="material-symbols-outlined">system_update</span>
+<span class="font-label-caps text-label-caps">Update Software</span>
+</div>
+<span class="material-symbols-outlined text-outline group-hover:text-primary">chevron_right</span>
+</button>
+<div class="p-sm border border-outline-variant rounded">
+<div class="flex justify-between items-center mb-base">
+<div class="flex items-center gap-base text-primary">
+<span class="material-symbols-outlined">light_mode</span>
+<span class="font-label-caps text-label-caps">Brightness</span>
+</div>
+<span class="font-mono-timer text-sm text-primary">85%</span>
+</div>
+<input class="w-full accent-primary cursor-pointer" type="range"/>
+</div>
+<button class="flex items-center justify-center gap-base p-sm bg-secondary text-on-secondary rounded hover:brightness-110 transition-all active:scale-95 shadow-sm">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">emergency_share</span>
+<span class="font-label-caps text-label-caps">BROADCAST EMERGENCY MSG</span>
+</button>
+</div>
+</div>
+<!-- Mini Map Location -->
+<div class="bg-surface border border-outline-variant rounded-xl overflow-hidden h-48 relative">
+<div class="bg-cover bg-center w-full h-full grayscale opacity-60" data-alt="A clean, minimalist vector map of a city intersection with a highlight marker on a specific street corner where a bus totem is located. The map uses a municipal palette of grays, whites, and navy blues to match the admin dashboard aesthetic." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCL3SjJbDtrXL9ih-pcgy2bJRTDWjXfKsgRANut-2ZBrxWRev-6W6ZtO1llfu8Jh2ppcy5uvmWCqSe9wUGc6SciHYXqnjhgVuchREALXrtk4yulQ4lmFm0ryFonhpBZg7kXcUrktyqM-EiV19PQvDyJlj5_WKlX8mJg39eRASadty9cuD0Oq2H1qEOaalvsD7WnZrKSlA0lfAxBhC7F58W7iDQrufyrflo92i2i1Byanoi8aUSwsDXbFg')"></div>
+<div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+<span class="material-symbols-outlined text-primary text-4xl" style="font-variation-settings: 'FILL' 1;">location_on</span>
+<div class="absolute w-12 h-12 rounded-full border-4 border-primary/30 animate-ping"></div>
+</div>
+<div class="absolute bottom-base left-base right-base bg-white/90 glass-panel p-xs rounded border border-outline-variant">
+<p class="font-label-caps text-[10px] text-primary">UNIT POSITION: -23.541, -46.633</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Footer -->
+<footer class="flex flex-row justify-between items-center w-full px-margin-desktop py-base bg-surface-container-lowest border-t border-outline-variant shrink-0">
+<div class="font-label-caps text-label-caps text-primary">SERRA SMARTBUS</div>
+<div class="font-body-sm text-body-sm text-on-surface-variant opacity-70">
+                    © 2024 Serra SmartBus - Municipality Urban Mobility Division
+                </div>
+<div class="flex gap-md">
+<a class="font-label-caps text-[10px] text-on-surface-variant hover:text-primary transition-colors" href="#">Technical Support</a>
+<a class="font-label-caps text-[10px] text-on-surface-variant hover:text-primary transition-colors" href="#">Privacy Policy</a>
+<a class="font-label-caps text-[10px] text-on-surface-variant hover:text-primary transition-colors" href="#">API Docs</a>
+</div>
+</footer>
+</main>
+</div>
+<script>
+        // Micro-interactions and simulation logic
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const originalText = btn.innerHTML;
+                if (btn.innerText.includes('RESTART') || btn.innerText.includes('UPDATE')) {
+                    btn.innerHTML = '<span class="material-symbols-outlined animate-spin">refresh</span> Processing...';
+                    btn.disabled = true;
+                    setTimeout(() => {
+                        btn.innerHTML = originalText;
+                        btn.disabled = false;
+                    }, 2000);
+                }
+            });
+        });
+    </script>
+</body></html>

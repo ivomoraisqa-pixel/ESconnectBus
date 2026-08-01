@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+
+<html lang="pt-BR" style=""><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SerraBus Conect - Digital Totem</title>
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Google Fonts: Inter -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<style data-purpose="global-styles">body {
+    font-family: "Inter", sans-serif;
+    background-color: #1a1a1a;
+    /* Dark background as seen in the totem context */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    padding: 20px
+    }
+.totem-display {
+    width: 500px;
+    /* Standard portrait ratio display */
+    height: 900px;
+    background-color: #0b0d0f;
+    /* Near black background of the UI */
+    border-radius: 40px;
+    padding: 30px;
+    color: white;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    border: 8px solid #2d2d2d;
+    /* Simulation of the screen bezel */
+    }
+.map-placeholder {
+    background-image: url(https://lh3.googleusercontent.com/aida-public/AB6AXuA-qr58ewJyWHSzuRKof0WJvU2Jn9SonLxggcTL2k9JOXLTbYTDmLS639IxLQtzZu15QpHUQbQLdKowgl4Au2IQpbXoSMAsgFsom10GLKotkWNyHkN7JpVv7XDg6EeUszat3C0sEfIrobNYmyZ4hx-Z-kA1EX8xZPl0H6ZRMR01lGXp4vSujXvtoMBPRn9aqWc5CnhoEb-7Rx4Zm9yiuWaUhGYre3HD2ry7ryADNBKB87f7v1A9Myw4XQ);
+    background-size: cover;
+    background-position: center
+    }</style>
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            serra: {
+              green: '#1b6d3b',
+              blue: '#004a99',
+              lightBlue: '#1da1f2',
+              darkPanel: '#111827',
+              border: '#1f2937'
+            }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body>
+<!-- BEGIN: TotemInterface -->
+<div class="totem-display" data-purpose="main-display-container">
+<!-- BEGIN: HeaderSection -->
+<header class="flex justify-between items-start mb-6" data-purpose="totem-header">
+<div class="flex items-center gap-3">
+<!-- Logo Placeholder for Prefecture -->
+<div class="w-12 h-14 bg-white/10 rounded flex items-center justify-center p-1">
+<svg class="w-full h-full text-green-500" fill="currentColor" viewbox="0 0 24 24">
+<path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3zm0 10.91h-2v2h2v-2zm0-4h-2v2h2V8z"></path>
+</svg>
+</div>
+<div>
+<h2 class="text-[10px] uppercase tracking-widest text-gray-400 font-bold leading-tight">Prefeitura da</h2>
+<h1 class="text-3xl font-extrabold tracking-tighter leading-none">SERRA</h1>
+<p class="text-xs font-semibold text-gray-300 mt-1 uppercase">Carone Mall</p>
+</div>
+</div>
+<div class="text-right">
+<div class="text-3xl font-bold">10:45</div>
+<div class="text-[10px] text-gray-400 font-medium">23/05/2025</div>
+<div class="flex items-center justify-end gap-2 mt-2">
+<div class="text-right">
+<div class="text-sm font-bold leading-tight">28°C</div>
+<div class="text-[8px] text-gray-400 uppercase">Ensolarado</div>
+</div>
+<div class="text-yellow-400">
+<svg class="h-6 w-6" fill="none" stroke="currentColor" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.343l-.707.707M12 8a4 4 0 100 8 4 4 0 000-8z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</div>
+</div>
+<div class="mt-1 flex items-center justify-end gap-1">
+<span class="w-2 h-2 rounded-full bg-green-500"></span>
+<span class="text-[8px] text-green-500 font-bold uppercase">Qualidade do Ar: BOA</span>
+</div>
+</div>
+</header>
+<!-- END: HeaderSection -->
+<!-- BEGIN: BusArrivalsSection -->
+<section class="mb-6" data-purpose="bus-arrivals">
+<div class="bg-serra-green text-white py-2 px-4 rounded-t-lg">
+<h3 class="font-bold text-sm tracking-wide">PRÓXIMOS ÔNIBUS</h3>
+</div>
+<div class="bg-black/40 border-x border-b border-gray-800 rounded-b-lg overflow-hidden">
+<!-- Line Item 1 -->
+<div class="flex items-center p-3 border-b border-gray-800 hover:bg-white/5 transition-colors">
+<div class="bg-green-600 text-white font-bold px-3 py-1 rounded-md text-lg w-16 text-center">523</div>
+<div class="ml-4 flex-grow">
+<div class="text-sm font-bold text-gray-200">TERMINAL LARANJEIRAS</div>
+</div>
+<div class="text-right">
+<div class="text-lg font-extrabold text-white">1 <span class="text-xs font-normal">min</span></div>
+<div class="flex items-center justify-end text-[10px] text-gray-400">
+<svg class="w-3 h-3 mr-1" fill="currentColor" viewbox="0 0 24 24"><path d="M13.5 5.5c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zM9.8 8.9L7 23h2.1l1.8-8 2.1 2v6h2V15l-2.1-2 .6-3c1.3 1.5 3.3 2.5 5.5 2.5V10.5c-2.1 0-3.9-1.2-4.7-3L12.8 5c-.4-1.1-1.5-1.8-2.7-1.8h-.1c-1.1 0-2.1.8-2.5 1.9L5 15h2l2.8-6.1z"></path></svg>
+              200 m
+            </div>
+</div>
+</div>
+<!-- Line Item 2 -->
+<div class="flex items-center p-3 border-b border-gray-800">
+<div class="bg-blue-700 text-white font-bold px-3 py-1 rounded-md text-lg w-16 text-center">507</div>
+<div class="ml-4 flex-grow">
+<div class="text-sm font-bold text-gray-200 uppercase">Centro / Vitória</div>
+</div>
+<div class="text-right">
+<div class="text-lg font-extrabold text-white">5 <span class="text-xs font-normal">min</span></div>
+<div class="flex items-center justify-end text-[10px] text-gray-400">
+<svg class="w-3 h-3 mr-1" fill="currentColor" viewbox="0 0 24 24"><path d="M13.5 5.5c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zM9.8 8.9L7 23h2.1l1.8-8 2.1 2v6h2V15l-2.1-2 .6-3c1.3 1.5 3.3 2.5 5.5 2.5V10.5c-2.1 0-3.9-1.2-4.7-3L12.8 5c-.4-1.1-1.5-1.8-2.7-1.8h-.1c-1.1 0-2.1.8-2.5 1.9L5 15h2l2.8-6.1z"></path></svg>
+              1,2 km
+            </div>
+</div>
+</div>
+<!-- Line Item 3 -->
+<div class="flex items-center p-3 border-b border-gray-800">
+<div class="bg-blue-900 text-white font-bold px-3 py-1 rounded-md text-lg w-16 text-center">814</div>
+<div class="ml-4 flex-grow">
+<div class="text-sm font-bold text-gray-200 uppercase">Jacaraípe</div>
+</div>
+<div class="text-right">
+<div class="text-lg font-extrabold text-white">11 <span class="text-xs font-normal">min</span></div>
+<div class="flex items-center justify-end text-[10px] text-gray-400">
+<svg class="w-3 h-3 mr-1" fill="currentColor" viewbox="0 0 24 24"><path d="M13.5 5.5c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zM9.8 8.9L7 23h2.1l1.8-8 2.1 2v6h2V15l-2.1-2 .6-3c1.3 1.5 3.3 2.5 5.5 2.5V10.5c-2.1 0-3.9-1.2-4.7-3L12.8 5c-.4-1.1-1.5-1.8-2.7-1.8h-.1c-1.1 0-2.1.8-2.5 1.9L5 15h2l2.8-6.1z"></path></svg>
+              2,3 km
+            </div>
+</div>
+</div>
+<!-- Line Item 4 -->
+<!-- Line Item 5 -->
+</div>
+</section>
+<!-- END: BusArrivalsSection -->
+<!-- BEGIN: MapSection -->
+<section class="mb-6 relative rounded-xl overflow-hidden map-placeholder h-[450px] shadow-lg shadow-blue-500/20" data-purpose="map-container"><div class="absolute top-3 left-4 bg-white/90 text-gray-900 px-3 py-1 rounded text-xs font-bold shadow-md z-10">MAPA DE LINHAS</div><img alt="Detailed city map" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBfmSPwfSGYnhYouY472PnPKGrQD7_9otDueNpKP-W2QYv2WsyNKIC0i4uiKd7G53seEzVpeVKuR-CLKoRyGP75XaP6TcrVPBBAV6MDbrFuCBS4s5pzjg1tVSsRpucBKDwsgFEDRHFlnnmTeK4RstbdIDpWIOOsVhloq3Cj9Wyeml8jglazOHSQ_CQaawSp5PDGBtNxTnyrWHUnPgy99DUbpGG5CLKsu4akf7S5ZB9Aptu7oUgjMGQUKg"/></section>
+<!-- END: MapSection -->
+<!-- BEGIN: FeatureIcons -->
+<!-- END: FeatureIcons -->
+<!-- BEGIN: FooterInfoBox -->
+<section class="bg-[#0f1d2e] rounded-xl p-4 flex gap-4 border border-blue-900/50 mb-auto" data-purpose="info-footer">
+<div class="flex-1 border-r border-blue-900/30 pr-4">
+<h4 class="text-[10px] font-bold text-green-500 uppercase leading-tight mb-1">Informativos<br/>Prefeitura da Serra</h4>
+<p class="text-[9px] text-gray-400 leading-tight">Mais mobilidade, segurança e qualidade de vida para todos.</p>
+</div>
+<div class="flex-1 border-r border-blue-900/30 pr-4">
+<h4 class="text-[8px] text-gray-400 uppercase font-bold mb-2">Fale com a gente</h4>
+<div class="flex items-center gap-2 mb-1">
+<svg class="w-3 h-3 text-green-500" fill="currentColor" viewbox="0 0 24 24"><path d="M12.01 2.01c-5.52 0-10 4.48-10 10s4.48 10 10 10c1.06 0 2.08-.17 3.04-.47l4.89 1.43c.48.14.93-.28.82-.77l-1.35-4.63c.42-.93.66-1.95.66-3.03 0-5.52-4.48-10-10-10zm.01 1.5c4.69 0 8.5 3.81 8.5 8.5 0 1.13-.23 2.22-.64 3.2l.9 3.09-3.23-.94c-.93.47-1.99.75-3.11.75-4.69 0-8.5-3.81-8.5-8.5 0-4.69 3.81-8.5 8.5-8.5zM9.5 9c-.28 0-.5.22-.5.5v2c0 .28.22.5.5.5s.5-.22.5-.5v-2c0-.28-.22-.5-.5-.5zm5 0c-.28 0-.5.22-.5.5v2c0 .28.22.5.5.5s.5-.22.5-.5v-2c0-.28-.22-.5-.5-.5z"></path></svg>
+<span class="text-sm font-bold">156</span>
+</div>
+<div class="text-[9px] text-gray-300">serra.es.gov.br</div>
+</div>
+</section>
+<!-- END: FooterInfoBox -->
+<!-- BEGIN: BrandingFooter -->
+<footer class="mt-6 flex justify-between items-center" data-purpose="branding-footer">
+<div class="flex items-center gap-3">
+<div class="bg-blue-600 p-2 rounded-lg">
+<img alt="Bus Icon" class="w-8 h-8 invert brightness-0" src="https://lh3.googleusercontent.com/aida/AP1WRLsz-GRRguqwyR0RxeH0XIUmc9WgsxCzuQnGm5KBRPu0Ku9fbObU2C3tZH7GYHCvsIVWAXWD6LBi9iyYS9viT_6QaujdfWj6f31_4rcW5r4gSzLuguN0kCpC6h6OVjZE1EKh_HcHdoBUN7b0p94a4jk5s1Y5SeWGb1vzHCB2CKOqai_cRZG9GJi-c7HrZkMfub_8cHYqJy7vMDIxHa7_2benVFRxhmLlOQMSDQYm4M8Hlye9vLet5gAMl5zL"/>
+</div>
+<div>
+<div class="text-2xl font-black italic tracking-tighter text-white leading-none">
+            Serra<span class="text-blue-500">Bus</span>
+</div>
+<div class="text-[10px] font-bold tracking-[0.2em] text-blue-400 uppercase">Conect</div>
+</div>
+</div>
+<div class="text-right flex flex-col items-end">
+<div class="flex items-center gap-1 mb-0.5">
+<svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071a9.5 9.5 0 0114.142 0M2.828 9.9a14.5 14.5 0 0120.344 0" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+<span class="text-xs font-bold text-white">Wi-Fi Grátis</span>
+</div>
+<span class="text-[9px] text-gray-500 font-medium">Conecte-se</span>
+</div>
+</footer>
+<!-- END: BrandingFooter -->
+</div>
+<!-- END: TotemInterface -->
+</body></html>

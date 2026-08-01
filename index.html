@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SerraBus Conect - Painel Administrativo</title>
+  <meta name="description" content="Sistema de gerenciamento de totens de transporte público da Serra">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/pages.css">
+</head>
+<body>
+  <!-- Global Error Handler -->
+  <script>
+    window.addEventListener('error', function(e) {
+      if(e.message && e.message.includes('toFixed')) {
+        document.body.innerHTML = '<div style="padding:40px;text-align:center;font-family:sans-serif;">' +
+          '<h2 style="color:#e53e3e;">Atualização Necessária</h2>' +
+          '<p>O sistema foi atualizado para corrigir este erro, mas seu navegador ainda está usando a versão antiga.</p>' +
+          '<button onclick="window.location.reload(true)" style="padding:10px 20px;background:#2D9B5A;color:white;border:none;border-radius:5px;cursor:pointer;">Forçar Atualização</button>' +
+        '</div>';
+      }
+    });
+    window.addEventListener('unhandledrejection', function(e) {
+      if(e.reason && e.reason.message && e.reason.message.includes('toFixed')) {
+        document.body.innerHTML = '<div style="padding:40px;text-align:center;font-family:sans-serif;">' +
+          '<h2 style="color:#e53e3e;">Atualização Necessária</h2>' +
+          '<p>O sistema foi atualizado para corrigir este erro, mas seu navegador ainda está usando a versão antiga na memória.</p>' +
+          '<button onclick="location.reload(true)" style="padding:10px 20px;background:#2D9B5A;color:white;border:none;border-radius:5px;cursor:pointer;">Forçar Atualização</button>' +
+        '</div>';
+      }
+    });
+  </script>
+  <!-- Global Loading Overlay -->
+  <div id="global-loader" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(255,255,255,0.95);backdrop-filter:blur(4px);z-index:9999;align-items:center;justify-content:center;flex-direction:column;animation:fadeIn 0.2s ease;">
+    <div style="display:flex;gap:8px;align-items:center;">
+      <div style="width:12px;height:12px;border-radius:50%;background:#2D9B5A;animation:pulse 1s infinite alternate;"></div>
+      <div style="width:12px;height:12px;border-radius:50%;background:#3B82F6;animation:pulse 1s infinite alternate 0.2s;"></div>
+      <div style="width:12px;height:12px;border-radius:50%;background:#F59E0B;animation:pulse 1s infinite alternate 0.4s;"></div>
+    </div>
+    <div style="margin-top:24px;font-family:Inter;font-weight:600;font-size:14px;color:var(--text-secondary, #6B7280);letter-spacing:1px;text-transform:uppercase;">Carregando sistema</div>
+    <style>
+      @keyframes pulse { 0% { transform: scale(0.8); opacity: 0.5; } 100% { transform: scale(1.2); opacity: 1; } }
+      @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+  </div>
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="20" cy="20" r="20" fill="#2D9B5A"/>
+          <path d="M12 14h16v10a2 2 0 0 1-2 2H14a2 2 0 0 1-2-2V14z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M14 14V12a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2M12 20h16M15 26v2M25 26v2M16 17h.01M24 17h.01" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="sidebar-brand">
+        <span class="brand-name">SerraBus</span>
+        <span class="brand-sub">CONECT</span>
+      </div>
+      <button class="sidebar-toggle" id="sidebar-toggle">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+      </button>
+    </div>
+    <nav class="sidebar-nav">
+      <!-- PAINEL -->
+      <div class="sidebar-section-title">PAINEL</div>
+      <a class="sidebar-item active" data-page="dashboard" href="#dashboard">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-layout-dashboard"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+        <span>Dashboard</span>
+      </a>
+      <a class="sidebar-item" data-page="mapa-operacional" href="#mapa-operacional">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-map"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" x2="9" y1="3" y2="18"/><line x1="15" x2="15" y1="6" y2="21"/></svg>
+        <span>Mapa Operacional</span>
+      </a>
+      
+      <!-- TOTENS -->
+      <div class="sidebar-section-title">TOTENS</div>
+      <a class="sidebar-item" data-page="totens" href="#totens">
+        <svg viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+        <span>Totens (Gerenciar)</span>
+      </a>
+      <a class="sidebar-item" data-page="simulador" href="#simulador">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-smartphone"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg>
+        <span>Simulador do Totem</span>
+      </a>
+      <a class="sidebar-item" data-page="horarios" href="#horarios">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <span>Horários e Tempo Real</span>
+      </a>
+      
+      <!-- PUBLICIDADE -->
+      <div class="sidebar-section-title">PUBLICIDADE</div>
+      <a class="sidebar-item" data-page="campanhas" href="#campanhas">
+        <svg viewBox="0 0 24 24"><polygon points="11 19 2 12 11 5 11 19"/><path d="M22 12A10 10 0 0 0 12 2v20a10 10 0 0 0 10-10z"/></svg>
+        <span>Campanhas</span>
+      </a>
+      <a class="sidebar-item" data-page="informativos" href="#informativos">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        <span>Informativos</span>
+      </a>
+      <a class="sidebar-item" data-page="anuncios" href="#anuncios">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        <span>Anúncios</span>
+      </a>
+      <a class="sidebar-item" data-page="playlists" href="#playlists">
+        <svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+        <span>Playlists</span>
+      </a>
+      <a class="sidebar-item" data-page="relatorios" href="#relatorios">
+        <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        <span>Relatórios de Exibição</span>
+      </a>
+      
+      <!-- USUÁRIOS -->
+      <div class="sidebar-section-title">USUÁRIOS</div>
+      <a class="sidebar-item" data-page="usuarios" href="#usuarios">
+        <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span>Usuários</span>
+      </a>
+      <a class="sidebar-item" data-page="perfis" href="#perfis">
+        <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <span>Perfis e Permissões</span>
+      </a>
+      
+      <!-- CONFIGURAÇÕES -->
+      <div class="sidebar-section-title">CONFIGURAÇÕES</div>
+      <a class="sidebar-item" data-page="configuracoes" href="#configuracoes">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span>Configurações Gerais</span>
+      </a>
+      <a class="sidebar-item" data-page="integracoes" href="#integracoes">
+        <svg viewBox="0 0 24 24"><path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/><path d="M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z"/></svg>
+        <span>Integrações</span>
+      </a>
+      <a class="sidebar-item" data-page="logs" href="#logs">
+        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        <span>Logs do Sistema</span>
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <span>SerraBus Conect</span>
+      <span>v1.0.0</span>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main-wrapper">
+    <header class="top-header" id="top-header">
+      <div class="page-title-section">
+        <h1 class="page-title" id="page-title">Painel Geral</h1>
+        <p class="page-subtitle" id="page-subtitle">Visão geral dos totens e operações</p>
+      </div>
+      <div class="header-right">
+        <div class="header-actions" id="header-actions"></div>
+        <div class="date-range-selector">
+          <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <span>23/05/2025 - 23/05/2025</span>
+        </div>
+        <button class="btn btn-secondary btn-export">
+          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar
+        </button>
+        <div class="notification-bell">
+          <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span class="notification-badge">3</span>
+        </div>
+        <div class="user-section">
+          <div class="user-avatar">
+            <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </div>
+          <div class="user-info">
+            <span class="user-name">Admin</span>
+            <span class="user-role">Administrador</span>
+          </div>
+        </div>
+      </div>
+    </header>
+    <main class="main-content" id="main-content">
+      <!-- Dashboard Layout Example -->
+      <div class="content-grid">
+        <div class="kpi-row">
+          <div class="kpi-card">
+            <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
+            <div class="kpi-info">
+              <span class="kpi-label">Totens Ativos</span>
+              <span class="kpi-value">42</span>
+              <span class="kpi-sub"><span class="kpi-trend positive">↑ 2</span> este mês</span>
+            </div>
+          </div>
+          <div class="kpi-card variant-blue">
+            <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+            <div class="kpi-info">
+              <span class="kpi-label">Consultas Hoje</span>
+              <span class="kpi-value">12.4K</span>
+              <span class="kpi-sub"><span class="kpi-trend positive">↑ 15%</span> vs ontem</span>
+            </div>
+          </div>
+          <div class="kpi-card variant-orange">
+            <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12A10 10 0 0 0 12 2v20a10 10 0 0 0 10-10z"/></svg></div>
+            <div class="kpi-info">
+              <span class="kpi-label">Campanhas Ativas</span>
+              <span class="kpi-value">8</span>
+              <span class="kpi-sub">3 terminam em breve</span>
+            </div>
+          </div>
+          <div class="kpi-card variant-red">
+            <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+            <div class="kpi-info">
+              <span class="kpi-label">Totens Offline</span>
+              <span class="kpi-value">2</span>
+              <span class="kpi-sub">Requer atenção</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="grid-dashboard-map">
+          <div class="card" style="grid-column: span 2;">
+            <div class="card-header">
+              <span>Mapa de Totens</span>
+              <button class="btn btn-secondary">Ver Todos</button>
+            </div>
+            <div class="card-body">
+              <div id="map-container">
+                <!-- Map placeholder -->
+                <div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:#6B7280; font-size:14px;">
+                  Mapa carregando...
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <span>Status da Rede</span>
+            </div>
+            <div class="card-body">
+              <div class="donut-chart-area">
+                <!-- Donut Chart Placeholder -->
+                <div style="width: 160px; height: 160px; border-radius: 50%; border: 20px solid #10B981; border-right-color: #EF4444; border-bottom-color: #F59E0B; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 700;">
+                  90%
+                </div>
+              </div>
+              <div style="display:flex; justify-content:center; gap:16px; margin-top:24px; font-size:13px; color:#4B5563;">
+                <div><span class="status-dot online"></span> 42 Online</div>
+                <div><span class="status-dot offline"></span> 2 Offline</div>
+                <div><span class="status-dot" style="background:#F59E0B"></span> 3 Instalação</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card">
+          <div class="card-header">
+            <span>Últimos Logs do Sistema</span>
+          </div>
+          <div class="card-body" style="padding: 0;">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Data/Hora</th>
+                  <th>Totem</th>
+                  <th>Evento</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>25/07/2026 23:25</td>
+                  <td>Totem Laranjeiras 01</td>
+                  <td>Atualização de playlist de campanha (ID 402)</td>
+                  <td><span class="badge badge-online">Sucesso</span></td>
+                </tr>
+                <tr>
+                  <td>25/07/2026 23:18</td>
+                  <td>Totem Terminal Jacaraípe</td>
+                  <td>Queda de conexão (Ping timeout)</td>
+                  <td><span class="badge badge-offline">Offline</span></td>
+                </tr>
+                <tr>
+                  <td>25/07/2026 23:10</td>
+                  <td>Totem Prefeitura</td>
+                  <td>Sincronização de horários de ônibus completa</td>
+                  <td><span class="badge badge-online">Sucesso</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="card-footer">
+            <a href="#logs">Ver todos os logs →</a>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase.js?v=3"></script>
+  <script src="js/data.js?v=3"></script>
+  <script src="js/charts.js?v=3"></script>
+  <script src="js/components.js?v=3"></script>
+  <script src="js/pages/dashboard.js?v=3"></script>
+  <script src="js/pages/totens.js?v=9"></script>
+  <script src="js/pages/localizacoes.js?v=3"></script>
+  <script src="js/pages/linhas.js?v=3"></script>
+  <script src="js/pages/horarios.js?v=3"></script>
+  <script src="js/pages/mapas.js?v=3"></script>
+  <script src="js/pages/informativos.js?v=5"></script>
+  <script src="js/pages/campanhas.js?v=3"></script>
+  <script src="js/pages/anuncios.js?v=3"></script>
+  <script src="js/pages/playlists.js?v=3"></script>
+  <script src="js/pages/relatorios.js?v=3"></script>
+  <script src="js/pages/usuarios.js?v=3"></script>
+  <script src="js/pages/perfis.js?v=3"></script>
+  <script src="js/pages/configuracoes.js?v=3"></script>
+  <script src="js/pages/integracoes.js?v=3"></script>
+  <script src="js/pages/logs.js?v=3"></script>
+  <script src="js/pages/simulador.js?v=3"></script>
+  <script src="js/pages/mapa_operacional.js?v=3"></script>
+  <script src="js/router.js?v=3"></script>
+  <script src="js/app.js?v=3"></script>
+</body>
+</html>

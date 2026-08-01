@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Serra SmartBus Admin - Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Inter', sans-serif; }
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 16px;
+        }
+        .status-dot { height: 8px; width: 8px; border-radius: 50%; display: inline-block; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #c3c6d1; border-radius: 10px; }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary": "#ffffff",
+                        "surface-variant": "#e1e3e4",
+                        "error-container": "#ffdad6",
+                        "on-secondary-fixed": "#2f1500",
+                        "on-tertiary-fixed-variant": "#00531a",
+                        "secondary-container": "#fd8b00",
+                        "surface-bright": "#f8f9fa",
+                        "tertiary": "#002507",
+                        "on-tertiary-fixed": "#002106",
+                        "secondary": "#904d00",
+                        "tertiary-fixed": "#83fc8e",
+                        "primary-container": "#003366",
+                        "surface-container-low": "#f3f4f5",
+                        "primary-fixed-dim": "#a7c8ff",
+                        "surface-container": "#edeeef",
+                        "surface-container-lowest": "#ffffff",
+                        "outline-variant": "#c3c6d1",
+                        "outline": "#737780",
+                        "inverse-primary": "#a7c8ff",
+                        "secondary-fixed-dim": "#ffb77d",
+                        "on-secondary-fixed-variant": "#6e3900",
+                        "on-primary-fixed-variant": "#1f477b",
+                        "on-secondary": "#ffffff",
+                        "on-surface": "#191c1d",
+                        "error": "#ba1a1a",
+                        "on-primary": "#ffffff",
+                        "surface-tint": "#3a5f94",
+                        "primary": "#001e40",
+                        "inverse-on-surface": "#f0f1f2",
+                        "surface-dim": "#d9dadb",
+                        "surface": "#f8f9fa",
+                        "on-error-container": "#93000a",
+                        "surface-container-highest": "#e1e3e4",
+                        "on-error": "#ffffff",
+                        "background": "#f8f9fa",
+                        "on-surface-variant": "#43474f",
+                        "inverse-surface": "#2e3132",
+                        "surface-container-high": "#e7e8e9",
+                        "on-secondary-container": "#603100",
+                        "secondary-fixed": "#ffdcc3",
+                        "on-tertiary-container": "#36b24e",
+                        "on-background": "#191c1d",
+                        "primary-fixed": "#d5e3ff",
+                        "on-primary-fixed": "#001b3c",
+                        "tertiary-container": "#003d11",
+                        "tertiary-fixed-dim": "#66df75",
+                        "on-primary-container": "#799dd6"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "sm": "12px",
+                        "margin-mobile": "16px",
+                        "lg": "48px",
+                        "gutter": "16px",
+                        "margin-desktop": "32px",
+                        "xs": "4px",
+                        "base": "8px",
+                        "md": "24px"
+                    },
+                    "fontFamily": {
+                        "title-md": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "label-caps": ["Inter"],
+                        "mono-timer": ["Inter"]
+                    },
+                    "fontSize": {
+                        "title-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                        "mono-timer": ["24px", {"lineHeight": "24px", "letterSpacing": "-0.01em", "fontWeight": "700"}]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-surface flex h-screen overflow-hidden">
+<!-- SideNavBar -->
+<aside class="hidden md:flex flex-col h-full py-md px-sm bg-surface-container border-r border-outline-variant w-64 shrink-0">
+<div class="mb-lg px-base">
+<h1 class="font-title-md text-title-md font-bold text-primary">Serra Admin</h1>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Regional Operations</p>
+</div>
+<nav class="flex-1 space-y-xs">
+<!-- Active Navigation -->
+<a class="flex items-center gap-sm px-sm py-sm text-primary font-bold bg-primary-fixed hover:bg-surface-container-highest transition-all duration-200 cursor-pointer active:translate-x-1" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-label-caps text-label-caps">Dashboard</span>
+</a>
+<a class="flex items-center gap-sm px-sm py-sm text-on-surface-variant hover:bg-surface-container-highest transition-all duration-200 cursor-pointer active:translate-x-1" href="#">
+<span class="material-symbols-outlined" data-icon="map">map</span>
+<span class="font-label-caps text-label-caps">Live Map</span>
+</a>
+<a class="flex items-center gap-sm px-sm py-sm text-on-surface-variant hover:bg-surface-container-highest transition-all duration-200 cursor-pointer active:translate-x-1" href="#">
+<span class="material-symbols-outlined" data-icon="important_devices">important_devices</span>
+<span class="font-label-caps text-label-caps">Totem Management</span>
+</a>
+<a class="flex items-center gap-sm px-sm py-sm text-on-surface-variant hover:bg-surface-container-highest transition-all duration-200 cursor-pointer active:translate-x-1" href="#">
+<span class="material-symbols-outlined" data-icon="directions_bus">directions_bus</span>
+<span class="font-label-caps text-label-caps">Fleet/Lines</span>
+</a>
+<a class="flex items-center gap-sm px-sm py-sm text-on-surface-variant hover:bg-surface-container-highest transition-all duration-200 cursor-pointer active:translate-x-1" href="#">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+<span class="font-label-caps text-label-caps">AI Reports</span>
+</a>
+<a class="flex items-center gap-sm px-sm py-sm text-on-surface-variant hover:bg-surface-container-highest transition-all duration-200 cursor-pointer active:translate-x-1" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-label-caps text-label-caps">Settings</span>
+</a>
+</nav>
+<div class="mt-lg pt-md border-t border-outline-variant space-y-xs">
+<button class="w-full bg-error text-on-error font-label-caps text-label-caps py-sm flex items-center justify-center gap-xs hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined" data-icon="warning">warning</span>
+                Emergency Alert
+            </button>
+<div class="mt-md space-y-xs">
+<a class="flex items-center gap-sm px-sm py-sm text-on-surface-variant font-body-sm text-body-sm hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="verified_user">verified_user</span>
+                    System Status
+                </a>
+<a class="flex items-center gap-sm px-sm py-sm text-on-surface-variant font-body-sm text-body-sm hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="support_agent">support_agent</span>
+                    Help
+                </a>
+</div>
+</div>
+</aside>
+<!-- Main Content Shell -->
+<div class="flex-1 flex flex-col min-w-0">
+<!-- TopNavBar -->
+<header class="bg-surface border-b border-outline-variant h-20 flex justify-between items-center w-full px-margin-desktop shrink-0">
+<div class="flex items-center gap-md">
+<div class="font-headline-lg text-headline-lg font-bold text-primary">Serra SmartBus</div>
+<div class="hidden lg:flex items-center bg-surface-container-low border border-outline-variant rounded-lg px-sm py-xs w-80">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="search">search</span>
+<input class="bg-transparent border-none focus:ring-0 font-body-sm text-body-sm w-full ml-xs" placeholder="Search system entities..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-md">
+<div class="hidden sm:flex items-center gap-xs text-on-tertiary-container">
+<span class="status-dot bg-on-tertiary-container"></span>
+<span class="font-label-caps text-label-caps">System Healthy</span>
+</div>
+<div class="flex items-center gap-sm border-l border-outline-variant pl-md">
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary" data-icon="cloud">cloud</span>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary" data-icon="check_circle">check_circle</span>
+<div class="flex items-center gap-xs cursor-pointer hover:bg-surface-container p-xs rounded transition-colors active:scale-95 duration-150">
+<div class="w-8 h-8 rounded-full bg-primary-fixed flex items-center justify-center text-primary font-bold">A</div>
+<span class="font-label-caps text-label-caps text-primary hidden md:block">Admin Profile</span>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Canvas -->
+<main class="flex-1 overflow-y-auto p-margin-desktop custom-scrollbar bg-background">
+<div class="max-w-[1600px] mx-auto space-y-md">
+<!-- Overview Metrics -->
+<section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-gutter">
+<div class="bg-surface-container-lowest border border-outline-variant p-md flex flex-col hover:border-primary transition-all group">
+<span class="font-label-caps text-label-caps text-on-surface-variant mb-xs">Active Buses</span>
+<div class="flex items-end justify-between">
+<span class="font-headline-lg text-headline-lg text-primary">124</span>
+<span class="material-symbols-outlined text-on-tertiary-container" data-icon="directions_bus">directions_bus</span>
+</div>
+<div class="mt-xs text-[10px] font-bold text-on-tertiary-container">+3 since 8:00 AM</div>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant p-md flex flex-col hover:border-primary transition-all group">
+<span class="font-label-caps text-label-caps text-on-surface-variant mb-xs">Connected Totems</span>
+<div class="flex items-end justify-between">
+<span class="font-headline-lg text-headline-lg text-primary">45</span>
+<span class="material-symbols-outlined text-on-tertiary-container" data-icon="sensors">sensors</span>
+</div>
+<div class="mt-xs text-[10px] font-bold text-on-tertiary-container">98% Online</div>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant p-md flex flex-col hover:border-primary transition-all group">
+<span class="font-label-caps text-label-caps text-on-surface-variant mb-xs">Active Alerts</span>
+<div class="flex items-end justify-between">
+<span class="font-headline-lg text-headline-lg text-error">2</span>
+<span class="material-symbols-outlined text-error" data-icon="error">error</span>
+</div>
+<div class="mt-xs text-[10px] font-bold text-error">Immediate action required</div>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant p-md flex flex-col hover:border-primary transition-all group">
+<span class="font-label-caps text-label-caps text-on-surface-variant mb-xs">Passengers Today</span>
+<div class="flex items-end justify-between">
+<span class="font-headline-lg text-headline-lg text-primary">12.5k</span>
+<span class="material-symbols-outlined text-primary" data-icon="groups">groups</span>
+</div>
+<div class="mt-xs text-[10px] font-bold text-on-tertiary-container">Predicted: 14.1k total</div>
+</div>
+</section>
+<!-- Dashboard Content Grid -->
+<div class="bento-grid">
+<!-- AI Insights: Punctuality -->
+<div class="col-span-12 lg:col-span-8 bg-surface-container-lowest border border-outline-variant p-md relative overflow-hidden">
+<div class="flex justify-between items-center mb-md">
+<div>
+<h3 class="font-title-md text-title-md text-primary">Punctuality Trends</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Real-time performance vs historical baseline</p>
+</div>
+<button class="flex items-center gap-xs font-label-caps text-label-caps text-primary border border-primary px-sm py-xs hover:bg-primary-fixed transition-colors">
+                                VIEW FULL REPORT
+                            </button>
+</div>
+<div class="h-64 w-full flex items-end gap-xs">
+<!-- Simplified Chart Representation -->
+<div class="flex-1 bg-surface-container h-[40%] rounded-t-sm hover:bg-primary-fixed-dim transition-colors group relative">
+<div class="absolute -top-6 left-1/2 -translate-x-1/2 hidden group-hover:block bg-primary text-on-primary text-[10px] px-1 rounded">82%</div>
+</div>
+<div class="flex-1 bg-surface-container h-[55%] rounded-t-sm hover:bg-primary-fixed-dim transition-colors group relative"></div>
+<div class="flex-1 bg-surface-container h-[70%] rounded-t-sm hover:bg-primary-fixed-dim transition-colors group relative"></div>
+<div class="flex-1 bg-primary h-[85%] rounded-t-sm relative group">
+<div class="absolute -top-6 left-1/2 -translate-x-1/2 bg-primary text-on-primary text-[10px] px-1 rounded">94%</div>
+</div>
+<div class="flex-1 bg-surface-container h-[75%] rounded-t-sm hover:bg-primary-fixed-dim transition-colors group relative"></div>
+<div class="flex-1 bg-surface-container h-[60%] rounded-t-sm hover:bg-primary-fixed-dim transition-colors group relative"></div>
+<div class="flex-1 bg-surface-container h-[65%] rounded-t-sm hover:bg-primary-fixed-dim transition-colors group relative"></div>
+<div class="flex-1 bg-surface-container h-[45%] rounded-t-sm hover:bg-primary-fixed-dim transition-colors group relative"></div>
+<div class="flex-1 bg-surface-container h-[50%] rounded-t-sm hover:bg-primary-fixed-dim transition-colors group relative"></div>
+<div class="flex-1 bg-surface-container h-[80%] rounded-t-sm hover:bg-primary-fixed-dim transition-colors group relative"></div>
+</div>
+<div class="flex justify-between mt-sm font-label-caps text-[10px] text-on-surface-variant uppercase">
+<span>06:00</span><span>09:00</span><span>12:00</span><span>15:00</span><span>18:00</span><span>21:00</span>
+</div>
+</div>
+<!-- Critical Alerts -->
+<div class="col-span-12 lg:col-span-4 bg-surface-container-lowest border border-outline-variant flex flex-col">
+<div class="p-md border-b border-outline-variant flex items-center justify-between">
+<h3 class="font-title-md text-title-md text-error">Critical Alerts</h3>
+<span class="bg-error-container text-on-error-container font-label-caps text-[10px] px-sm py-1 rounded-full">2 NEW</span>
+</div>
+<div class="flex-1 overflow-y-auto custom-scrollbar">
+<div class="p-md border-b border-outline-variant bg-error-container/10 flex gap-sm group cursor-pointer hover:bg-error-container/20 transition-colors">
+<span class="material-symbols-outlined text-error" data-icon="router">router</span>
+<div>
+<h4 class="font-label-caps text-label-caps text-error">Hardware Offline</h4>
+<p class="font-body-sm text-body-sm text-on-surface">Totem #12 (Main Square) disconnected</p>
+<span class="font-label-caps text-[10px] text-outline mt-xs block">2 MINUTES AGO</span>
+</div>
+</div>
+<div class="p-md border-b border-outline-variant flex gap-sm group cursor-pointer hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-secondary" data-icon="route">route</span>
+<div>
+<h4 class="font-label-caps text-label-caps text-secondary">Route Deviation</h4>
+<p class="font-body-sm text-body-sm text-on-surface">Bus 505 (Line A) off-route</p>
+<span class="font-label-caps text-[10px] text-outline mt-xs block">15 MINUTES AGO</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Real-time Status & AI Congestion -->
+<div class="col-span-12 lg:col-span-7 bg-surface-container-lowest border border-outline-variant p-md">
+<h3 class="font-title-md text-title-md text-primary mb-md">Predicted Congestion</h3>
+<div class="space-y-md">
+<div class="flex items-center gap-md">
+<div class="w-32 font-label-caps text-label-caps text-on-surface-variant">Downtown Hub</div>
+<div class="flex-1 h-3 bg-surface-container overflow-hidden rounded-full relative">
+<div class="absolute h-full bg-on-tertiary-container w-[40%]"></div>
+</div>
+<div class="w-12 text-right font-label-caps text-label-caps text-on-tertiary-container">Low</div>
+</div>
+<div class="flex items-center gap-md">
+<div class="w-32 font-label-caps text-label-caps text-on-surface-variant">Central Station</div>
+<div class="flex-1 h-3 bg-surface-container overflow-hidden rounded-full relative">
+<div class="absolute h-full bg-secondary-container w-[85%]"></div>
+</div>
+<div class="w-12 text-right font-label-caps text-label-caps text-secondary">High</div>
+</div>
+<div class="flex items-center gap-md">
+<div class="w-32 font-label-caps text-label-caps text-on-surface-variant">Port Terminal</div>
+<div class="flex-1 h-3 bg-surface-container overflow-hidden rounded-full relative">
+<div class="absolute h-full bg-on-tertiary-container w-[25%]"></div>
+</div>
+<div class="w-12 text-right font-label-caps text-label-caps text-on-tertiary-container">Low</div>
+</div>
+<div class="flex items-center gap-md">
+<div class="w-32 font-label-caps text-label-caps text-on-surface-variant">North Bypass</div>
+<div class="flex-1 h-3 bg-surface-container overflow-hidden rounded-full relative">
+<div class="absolute h-full bg-error w-[95%]"></div>
+</div>
+<div class="w-12 text-right font-label-caps text-label-caps text-error">Critical</div>
+</div>
+</div>
+</div>
+<!-- Recent Activity -->
+<div class="col-span-12 lg:col-span-5 bg-surface-container-lowest border border-outline-variant flex flex-col">
+<div class="p-md border-b border-outline-variant">
+<h3 class="font-title-md text-title-md text-primary">Recent Activity</h3>
+</div>
+<div class="flex-1 overflow-y-auto custom-scrollbar p-md space-y-sm">
+<div class="flex gap-sm items-start">
+<div class="w-2 h-2 mt-2 rounded-full bg-on-tertiary-container shrink-0"></div>
+<div>
+<p class="font-body-sm text-body-sm text-on-surface"><span class="font-bold">System</span> automatically re-routed Line C due to North Bypass congestion.</p>
+<span class="font-label-caps text-[10px] text-outline">12:45 PM</span>
+</div>
+</div>
+<div class="flex gap-sm items-start">
+<div class="w-2 h-2 mt-2 rounded-full bg-primary shrink-0"></div>
+<div>
+<p class="font-body-sm text-body-sm text-on-surface"><span class="font-bold">Admin Profile</span> updated schedule for Holiday Route B.</p>
+<span class="font-label-caps text-[10px] text-outline">12:30 PM</span>
+</div>
+</div>
+<div class="flex gap-sm items-start">
+<div class="w-2 h-2 mt-2 rounded-full bg-on-tertiary-container shrink-0"></div>
+<div>
+<p class="font-body-sm text-body-sm text-on-surface"><span class="font-bold">Totem #08</span> OTA update completed successfully.</p>
+<span class="font-label-caps text-[10px] text-outline">11:55 AM</span>
+</div>
+</div>
+<div class="flex gap-sm items-start">
+<div class="w-2 h-2 mt-2 rounded-full bg-secondary shrink-0"></div>
+<div>
+<p class="font-body-sm text-body-sm text-on-surface"><span class="font-bold">Warning:</span> High passenger density detected at Central Station platform 4.</p>
+<span class="font-label-caps text-[10px] text-outline">11:42 AM</span>
+</div>
+</div>
+</div>
+<button class="p-sm text-center font-label-caps text-label-caps text-primary hover:bg-surface-container transition-colors border-t border-outline-variant">
+                            SEE ALL ACTIVITY
+                        </button>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="bg-surface-container-lowest border-t border-outline-variant h-14 flex justify-between items-center w-full px-margin-desktop shrink-0">
+<span class="font-label-caps text-[10px] text-on-surface-variant">© 2024 Serra SmartBus - Municipality Urban Mobility Division</span>
+<div class="flex gap-md">
+<a class="font-label-caps text-[10px] text-on-surface-variant hover:text-primary transition-colors cursor-pointer" href="#">Technical Support</a>
+<a class="font-label-caps text-[10px] text-on-surface-variant hover:text-primary transition-colors cursor-pointer" href="#">Privacy Policy</a>
+<a class="font-label-caps text-[10px] text-on-surface-variant hover:text-primary transition-colors cursor-pointer" href="#">API Documentation</a>
+</div>
+</footer>
+</div>
+<!-- Mobile Navigation (Simplified) -->
+<nav class="md:hidden fixed bottom-0 left-0 right-0 bg-surface border-t border-outline-variant flex justify-around py-sm z-50">
+<button class="flex flex-col items-center gap-xs text-primary">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="text-[10px] font-label-caps">Home</span>
+</button>
+<button class="flex flex-col items-center gap-xs text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="map">map</span>
+<span class="text-[10px] font-label-caps">Map</span>
+</button>
+<button class="flex flex-col items-center gap-xs text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="text-[10px] font-label-caps">Alerts</span>
+</button>
+<button class="flex flex-col items-center gap-xs text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="menu">menu</span>
+<span class="text-[10px] font-label-caps">More</span>
+</button>
+</nav>
+<script>
+        // Simple micro-interaction for cards
+        document.querySelectorAll('.bento-grid > div').forEach(card => {
+            card.addEventListener('mouseenter', () => {
+                card.classList.add('scale-[1.005]');
+                card.style.transition = 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)';
+            });
+            card.addEventListener('mouseleave', () => {
+                card.classList.remove('scale-[1.005]');
+            });
+        });
+
+        // Dynamic system clock simulator (just for atmosphere)
+        setInterval(() => {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            // You could inject this into the header if needed
+        }, 60000);
+    </script>
+</body></html>

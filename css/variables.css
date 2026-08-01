@@ -1,0 +1,59 @@
+:root {
+  /* Colors */
+  --sidebar-bg: #0F172A; /* Slate 900 - Premium dark slate */
+  --sidebar-active: #10B981; /* Emerald 500 - Tech vibrant green */
+  --sidebar-text-inactive: #94A3B8; /* Slate 400 */
+  --sidebar-text-active: #F8FAFC; /* Slate 50 */
+  --bg-color: #F8FAFC; /* Slate 50 - Very clean, modern light background */
+  --card-bg: #FFFFFF;
+  --primary-green: #10B981;
+  --text-primary: #0F172A; /* Slate 900 */
+  --text-secondary: #475569; /* Slate 600 */
+  --border-color: #E2E8F0; /* Slate 200 */
+  
+  /* Status Colors */
+  --badge-online-bg: #ECFDF5;
+  --badge-online-text: #047857;
+  --badge-offline-bg: #FEF2F2;
+  --badge-offline-text: #B91C1C;
+  --badge-instalacao-bg: #FFFBEB;
+  --badge-instalacao-text: #B45309;
+  
+  /* Spacing */
+  --space-4: 4px;
+  --space-8: 8px;
+  --space-12: 12px;
+  --space-16: 16px;
+  --space-20: 20px;
+  --space-24: 24px;
+  --space-32: 32px;
+  --space-40: 40px;
+  --space-48: 48px;
+
+  /* Typography */
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-size-xs: 12px;
+  --font-size-sm: 13px;
+  --font-size-md: 14px;
+  --font-size-lg: 16px;
+  --font-size-xl: 24px;
+  --font-size-xxl: 30px;
+  --font-size-xxxl: 36px;
+  
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Layout */
+  --border-radius-sm: 6px;
+  --border-radius-md: 10px;
+  --border-radius-lg: 14px;
+  --border-radius-pill: 9999px;
+  
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+  
+  --transition-fast: 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}

@@ -1,0 +1,27 @@
+# Dependências
+node_modules/
+.env
+
+# Sistema
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+
+# Antigravity local
+antigravity/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Imagens de referência (não são do projeto)
+ChatGPT Image*.png
+TELA TOTEM FINAL.png
+
+# Temporários
+*.tmp
+*.bak

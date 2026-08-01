@@ -1,0 +1,8 @@
+{
+  "totemId": "SER-001",
+  "cidade": "Serra",
+  "api": "http://localhost:3000",
+  "ws": "ws://localhost:3000/ws",
+  "modo": "kiosk",
+  "fullscreen": true
+}

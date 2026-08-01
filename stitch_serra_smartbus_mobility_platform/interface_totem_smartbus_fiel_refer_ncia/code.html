@@ -1,0 +1,227 @@
+<!DOCTYPE html><html lang="pt-br"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Totem SerraBus - Prefeitura da Serra</title>
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Google Fonts for better typography matching -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style data-purpose="custom-typography">
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #1a1a1a;
+      color: white;
+    }
+  </style>
+<style data-purpose="layout-styling">
+    /* Custom background for the main totem screen container */
+    .totem-screen {
+      background: linear-gradient(180deg, #121212 0%, #0a0a0a 100%);
+      max-width: 450px; /* Scaled for web view but maintains aspect ratio */
+      min-height: 800px;
+    }
+    .line-row:not(:last-child) {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+  </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+<!-- BEGIN: Main Totem Container -->
+<main class="totem-screen w-full rounded-3xl overflow-hidden shadow-2xl flex flex-col border border-gray-800 bg-surface-container-lowest" id="totem-display" style="background: #191c1d;">
+<!-- BEGIN: Header Section -->
+<header class="p-6 flex justify-between items-start" data-purpose="totem-header">
+<div class="flex items-center gap-3">
+<!-- Placeholder for the City Crest -->
+<div class="w-12 h-14 bg-white/10 rounded flex items-center justify-center">
+<img alt="Brasão Serra" class="w-10 h-12 object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBSNWkvMwYeh8Eh-4gBkl6vxFBfDnk3rUsYaSg1n6mqurpW9z2E-Ev3ATTSGdVIiOlmrGq3ZQg0_NEs0jpqSDPo0rRpXvxH2uEW1QzeSfFd3vVcWJTQZo5SguwH_Z38nFiXMQCMjd_6P2ZAHWXsDMc-xA09wsI-LWmpyyuQX9N5Tx-MekH83orXoQdxYWnDRKB_f5dOAFjxJ8QfpNpcoxOZj1r8COnx6ncBm4pK5YjcWOqpcOJFvHuFtg">
+</div>
+<div>
+<p class="text-[10px] tracking-widest text-gray-400 font-bold">PREFEITURA DA</p>
+<h1 class="text-3xl font-black leading-tight tracking-tight">SERRA</h1>
+<p class="text-xs font-bold text-gray-400 mt-1">CARONE MALL</p>
+</div>
+</div>
+<div class="text-right">
+<div class="text-2xl font-bold">10:45</div>
+<div class="text-[10px] text-gray-400">23/05/2025</div>
+<div class="flex items-center justify-end mt-2 gap-1">
+<span class="text-yellow-400 text-lg">☀️</span>
+<span class="text-lg font-bold">28°C</span>
+</div>
+<div class="text-[9px] text-gray-400">Ensolarado</div>
+<div class="mt-1 flex items-center justify-end gap-1">
+<span class="text-[9px] text-green-400 uppercase font-bold">Qualidade do Ar</span>
+<div class="w-2 h-2 rounded-full bg-green-500"></div>
+<span class="text-[9px] text-green-400 uppercase font-bold">Boa</span>
+</div>
+</div>
+</header>
+<!-- END: Header Section -->
+<!-- BEGIN: Next Buses Section -->
+<section class="px-4" data-purpose="bus-listings">
+<div class="bg-green-700/90 text-white font-bold py-2 px-4 rounded-t-lg text-sm tracking-wide">
+        PRÓXIMOS ÔNIBUS
+      </div>
+<div class="bg-black/40 rounded-b-lg overflow-hidden border-x border-b border-white/5">
+<!-- Bus Row 1 -->
+<div class="line-row flex items-center p-3 gap-4">
+<div class="w-12 h-8 bg-green-700/80 rounded flex items-center justify-center font-bold text-lg">523</div>
+<div class="flex-1">
+<p class="text-xs font-bold uppercase tracking-wide">Terminal Laranjeiras</p>
+</div>
+<div class="text-right">
+<div class="text-sm font-bold">1 <span class="text-[10px] font-normal">min</span></div>
+<div class="text-[9px] text-gray-400 flex items-center justify-end gap-1">
+<span class="">🚶</span> 200 m
+            </div>
+</div>
+</div>
+<!-- Bus Row 2 -->
+<div class="line-row flex items-center p-3 gap-4">
+<div class="w-12 h-8 bg-blue-700/80 rounded flex items-center justify-center font-bold text-lg">507</div>
+<div class="flex-1">
+<p class="text-xs font-bold uppercase tracking-wide">Centro / Vitória</p>
+</div>
+<div class="text-right">
+<div class="text-sm font-bold">5 <span class="text-[10px] font-normal">min</span></div>
+<div class="text-[9px] text-gray-400 flex items-center justify-end gap-1">
+<span class="">🚶</span> 1,2 km
+            </div>
+</div>
+</div>
+<!-- Bus Row 3 -->
+<div class="line-row flex items-center p-3 gap-4">
+<div class="w-12 h-8 bg-blue-800/80 rounded flex items-center justify-center font-bold text-lg">814</div>
+<div class="flex-1">
+<p class="text-xs font-bold uppercase tracking-wide">Jacaraípe</p>
+</div>
+<div class="text-right">
+<div class="text-sm font-bold">11 <span class="text-[10px] font-normal">min</span></div>
+<div class="text-[9px] text-gray-400 flex items-center justify-end gap-1">
+<span class="">🚶</span> 2,3 km
+            </div>
+</div>
+</div>
+<!-- Bus Row 4 -->
+<div class="line-row flex items-center p-3 gap-4">
+<div class="w-12 h-8 bg-blue-900/80 rounded flex items-center justify-center font-bold text-lg">850</div>
+<div class="flex-1">
+<p class="text-xs font-bold uppercase tracking-wide">Serra Dourada</p>
+</div>
+<div class="text-right">
+<div class="text-sm font-bold">18 <span class="text-[10px] font-normal">min</span></div>
+<div class="text-[9px] text-gray-400 flex items-center justify-end gap-1">
+<span class="">🚶</span> 3,6 km
+            </div>
+</div>
+</div>
+<!-- Bus Row 5 -->
+<div class="line-row flex items-center p-3 gap-4">
+<div class="w-12 h-8 bg-indigo-900/80 rounded flex items-center justify-center font-bold text-lg">519</div>
+<div class="flex-1">
+<p class="text-xs font-bold uppercase tracking-wide">Carapina</p>
+</div>
+<div class="text-right">
+<div class="text-sm font-bold">22 <span class="text-[10px] font-normal">min</span></div>
+<div class="text-[9px] text-gray-400 flex items-center justify-end gap-1">
+<span class="">🚶</span> 4,8 km
+            </div>
+</div>
+</div>
+</div>
+</section>
+<!-- END: Next Buses Section -->
+<!-- BEGIN: Map Section -->
+<section class="mt-6 px-4" data-purpose="map-container">
+<div class="relative bg-[#d3d8d3] rounded-lg overflow-hidden h-40 border-2 border-gray-700 shadow-inner">
+<!-- Mock Map Background -->
+<div class="absolute inset-0 opacity-40">
+<svg class="w-full h-full" preserveAspectRatio="none" viewBox="0 0 200 100">
+<path d="M0 20 L200 80 M40 0 L40 100 M120 0 L160 100" fill="none" stroke="#999" stroke-width="1"></path>
+</svg>
+</div>
+<div class="absolute top-2 left-3 text-black text-[10px] font-bold uppercase">MAPA DE LINHAS</div>
+<!-- Map Labels -->
+<div class="absolute right-4 top-4 text-[8px] text-gray-600 font-bold">Carone Mall</div>
+<div class="absolute right-4 bottom-8 text-[8px] text-gray-600 font-bold leading-tight text-right">Colina de<br>Laranjeiras</div>
+<!-- Pin Marker -->
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
+<div class="text-blue-700 text-3xl">📍</div>
+<div class="bg-blue-900 text-white text-[8px] font-bold px-3 py-1 rounded shadow-lg mt-[-8px]">VOCÊ ESTÁ AQUI</div>
+</div>
+</div>
+</section>
+<!-- END: Map Section -->
+<!-- BEGIN: Service Features -->
+<section class="grid grid-cols-3 gap-2 px-6 mt-6 mb-4 text-center" data-purpose="service-icons">
+<div class="flex flex-col items-center gap-1">
+<div class="w-10 h-10 flex items-center justify-center rounded-full border border-gray-600">🕒</div>
+<p class="text-[10px] text-gray-300">Tempo real</p>
+</div>
+<div class="flex flex-col items-center gap-1">
+<div class="w-10 h-10 flex items-center justify-center rounded-full border border-gray-600">🛡️</div>
+<p class="text-[10px] text-gray-300">Confiável</p>
+</div>
+<div class="flex flex-col items-center gap-1">
+<div class="w-10 h-10 flex items-center justify-center rounded-full border border-gray-600">📶</div>
+<p class="text-[10px] text-gray-300">Conectado</p>
+</div>
+</section>
+<!-- END: Service Features -->
+<!-- BEGIN: Informative Banner -->
+<section class="px-4 mb-4" data-purpose="bottom-info-box">
+<div class="bg-white/5 border border-white/10 rounded-xl p-4 flex gap-4">
+<!-- Left Part -->
+<div class="flex-1">
+<h4 class="text-[10px] font-bold text-green-500 uppercase leading-tight">INFORMATIVOS<br>PREFEITURA DA SERRA</h4>
+<p class="text-[8px] text-gray-400 mt-2 leading-relaxed">Mais mobilidade, segurança e qualidade de vida para todos.</p>
+</div>
+<!-- Divider -->
+<div class="w-[1px] bg-white/10"></div>
+<!-- Middle Part -->
+<div class="flex-1 text-center">
+<p class="text-[8px] text-gray-400 uppercase font-bold mb-1">FALE COM A GENTE</p>
+<div class="flex items-center justify-center gap-1">
+<span class="text-xs">💬</span>
+<span class="text-sm font-bold">156</span>
+</div>
+<p class="text-[8px] text-gray-400 mt-1">serra.es.gov.br</p>
+</div>
+<!-- Divider -->
+<div class="w-[1px] bg-white/10"></div>
+<!-- Right Part -->
+<div class="flex-1 text-center">
+<p class="text-[8px] text-gray-400 uppercase font-bold mb-1 leading-tight">USE MÁSCARA<br>E PROTEJA-SE</p>
+<div class="text-lg">😷</div>
+</div>
+</div>
+</section>
+<!-- END: Informative Banner -->
+<!-- BEGIN: Footer -->
+<footer class="mt-auto p-6 flex justify-between items-center bg-black/50" data-purpose="totem-footer">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+<span class="text-white text-xl">🚌</span>
+</div>
+<div>
+<div class="flex items-center gap-1">
+<span class="text-xl font-bold tracking-tight">Serra</span>
+<span class="text-xl font-medium text-blue-400">Bus</span>
+</div>
+<p class="text-[10px] font-black tracking-[4px] text-blue-500 leading-none">CONECT</p>
+</div>
+</div>
+<div class="flex items-center gap-3 text-right">
+<div class="text-xl text-gray-300">📶</div>
+<div>
+<p class="text-[10px] font-bold leading-tight">Wi-Fi Grátis</p>
+<p class="text-[8px] text-gray-500">Conecte-se</p>
+</div>
+</div>
+</footer>
+<!-- END: Footer -->
+</main>
+<!-- END: Main Totem Container -->
+
+
+</body></html>

@@ -1,0 +1,13 @@
+{
+  "name": "totem-client",
+  "version": "1.0.0",
+  "description": "Totem Client Kiosk Application",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "electron": "^28.2.0"
+  }
+}
