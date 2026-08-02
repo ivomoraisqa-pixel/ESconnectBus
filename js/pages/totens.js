@@ -465,7 +465,8 @@ window.TotensController = {
 
       if (error) throw error;
       
-      const novoTotemId = data && data.length > 0 ? data[0].id : Math.floor(Math.random() * 9000);
+      const novoTotemId = data && data.length > 0 ? data[0].id : null;
+      if (!novoTotemId) throw new Error("Falha ao recuperar o ID do Totem recém-criado");
       
       // Gera um PIN de instalação que embute o ID do Totem (ex: 12-A8K2)
       const caracteres = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -474,6 +475,15 @@ window.TotensController = {
         sufixo += caracteres.charAt(Math.floor(Math.random() * caracteres.length));
       }
       const pin = `${novoTotemId}-${sufixo}`;
+      const token = `tok_${novoTotemId}_${Date.now()}`;
+
+      // Grava o PIN no banco de dados para o TotemClient validar
+      await window.supabase.from('activation_keys').insert([{
+        codigo: pin,
+        token: token,
+        totem_id: novoTotemId,
+        utilizado: false
+      }]);
 
       const linkInstalacao = `${window.location.origin}/totem-client/setup_totem.html`;
 
@@ -648,6 +658,92 @@ window.TotensController = {
         document.getElementById('detalhe-status').innerHTML = window.Components.badge('Manutenção', 'warning');
         document.getElementById('detalhe-contato').textContent = new Date().toLocaleString('pt-BR');
         setBtn('✅ Em Manutenção', '#F59E0B');
+      } catch (err) {
+        console.error(err);
+        setBtn('❌ Erro', '#EF4444');
+      }
+      return;
+    }
+
+    // === EXCLUIR TOTEM ===
+    if (actionName === 'Excluir Totem') {
+      if(!confirm(`⚠️ ATENÇÃO: Tem certeza que deseja EXCLUIR PERMANENTEMENTE o Totem [${ipTotem}]?\nTodos os dados e vínculos serão apagados.`)) return;
+      setBtn('⏳ Excluindo...', null);
+      try {
+        await window.supabase.from('totens').delete().eq('id', totemId);
+        this.closeModals();
+        window.Pages.totens();
+      } catch (err) {
+        console.error(err);
+        setBtn('❌ Erro', '#EF4444');
+      }
+      return;
+    }
+
+    // === GERAR ACESSO AO TOTEM ===
+    if (actionName === 'Gerar Acesso') {
+      if(!confirm(`Gerar novo link e código de acesso para o Totem [${ipTotem}]?\nIsso desconectará qualquer equipamento atual.`)) return;
+      setBtn('⏳ Gerando...', null);
+      try {
+        // Apaga chaves antigas
+        await window.supabase.from('activation_keys').delete().eq('totem_id', totemId);
+        
+        // Gera novo Código
+        const caracteres = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let sufixo = '';
+        for (let i = 0; i < 4; i++) {
+          sufixo += caracteres.charAt(Math.floor(Math.random() * caracteres.length));
+        }
+        const pin = `${totemId}-${sufixo}`;
+        const token = `tok_${totemId}_${Date.now()}`;
+
+        await window.supabase.from('activation_keys').insert([{
+          codigo: pin,
+          token: token,
+          totem_id: totemId,
+          utilizado: false
+        }]);
+
+        const linkInstalacao = `${window.location.origin}/totem-client/setup_totem.html`;
+
+        const modalHTML = `
+          <div class="modal-overlay active" id="modal-novo-acesso">
+            <div class="modal-box" style="text-align: center; max-width: 450px;">
+              <div style="background: #ECFDF5; width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+              </div>
+              <h3 style="margin-bottom: 8px; color: var(--text-primary);">Acesso Gerado com Sucesso!</h3>
+              <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 24px;">Você pode copiar o link e o código abaixo para configurar o totem.</p>
+              
+              <div style="background: #F3F4F6; padding: 16px; border-radius: 8px; margin-bottom: 16px; position: relative;">
+                <div style="font-size: 11px; color: #6B7280; font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">Link de Acesso ao Totem</div>
+                <div style="display: flex; align-items: center; justify-content: space-between; background: white; padding: 8px 12px; border-radius: 6px; border: 1px solid #E5E7EB; margin-bottom: 12px;">
+                  <span style="font-size: 13px; color: #374151; word-break: break-all; font-family: monospace; user-select: all;" id="copy-link">${linkInstalacao}</span>
+                  <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px;" onclick="navigator.clipboard.writeText('${linkInstalacao}'); this.innerText='Copiado!'; setTimeout(()=>this.innerText='Copiar', 2000);">Copiar</button>
+                </div>
+                
+                <div style="font-size: 11px; color: #6B7280; font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">Código de Acesso ao Painel</div>
+                <div style="display: flex; align-items: center; justify-content: space-between; background: white; padding: 8px 12px; border-radius: 6px; border: 1px solid #E5E7EB;">
+                  <span style="font-size: 20px; color: #2D9B5A; font-weight: 800; letter-spacing: 2px; font-family: monospace; user-select: all;" id="copy-pin">${pin}</span>
+                  <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px;" onclick="navigator.clipboard.writeText('${pin}'); this.innerText='Copiado!'; setTimeout(()=>this.innerText='Copiar', 2000);">Copiar</button>
+                </div>
+              </div>
+              
+              <button class="btn btn-primary" style="width: 100%; justify-content: center;" onclick="document.getElementById('modal-novo-acesso').remove();">Entendi, Fechar</button>
+            </div>
+          </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        
+        setBtn('✅ Acesso Gerado', '#10B981');
+        setTimeout(() => {
+          if(clickedBtn) {
+            clickedBtn.innerHTML = 'Gerar Acesso';
+            clickedBtn.style.color = '';
+            clickedBtn.style.borderColor = '';
+            clickedBtn.disabled = false;
+          }
+        }, 5000);
       } catch (err) {
         console.error(err);
         setBtn('❌ Erro', '#EF4444');
@@ -1054,6 +1150,9 @@ window.TotensController = {
                 <button class="btn-action" onclick="window.TotensController.fireAction('Capturar Tela')">${Components.icon('camera', 16)} Capturar Tela</button>
                 <button class="btn-action" onclick="window.TotensController.fireAction('Limpar Cache')">${Components.icon('trash', 16)} Limpar Cache</button>
                 <button class="btn-action warning" onclick="window.TotensController.fireAction('Manutenção')" style="grid-column: span 2;">${Components.icon('tool', 16)} Colocar em Manutenção</button>
+                <div style="grid-column: span 2; height: 1px; background: #E5E7EB; margin: 8px 0;"></div>
+                <button class="btn-action" onclick="window.TotensController.fireAction('Gerar Acesso')" style="color:#2D9B5A; border-color:#2D9B5A;">${Components.icon('link', 16)} Gerar Acesso ao Totem</button>
+                <button class="btn-action danger" onclick="window.TotensController.fireAction('Excluir Totem')">${Components.icon('trash-2', 16)} Excluir Totem</button>
               </div>
 
             </div>

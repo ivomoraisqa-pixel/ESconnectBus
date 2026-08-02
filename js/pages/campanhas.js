@@ -10,11 +10,11 @@ Pages.campanhas = async function() {
   main.innerHTML = `
     <!-- KPI Row -->
     <div class="kpi-row" style="display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-bottom:24px;">
-      ${Components.kpiCard({icon:Components.icon('megaphone',24),iconBg:'#D1FAE5',iconColor:'#065F46',title:'Campanhas Ativas',value:'12',subtitle:'de 18 campanhas',extra:'<div class="kpi-progress" style="background:#E5E7EB;height:6px;border-radius:3px;margin-top:12px;"><div class="kpi-progress-bar" style="background:#10B981;height:100%;width:66.7%;border-radius:3px;"></div></div>',borderColor:'#10B981'})}
-      ${Components.kpiCard({icon:Components.icon('bar-chart',24),iconBg:'#DBEAFE',iconColor:'#1E40AF',title:'Exibições Hoje',value:'152.430',trend:'up',trendValue:'+12,5%',subtitle:'vs. ontem',borderColor:'#3B82F6'})}
-      ${Components.kpiCard({icon:Components.icon('eye',24),iconBg:'#FEF3C7',iconColor:'#92400E',title:'CTR Médio',value:'2,18%',trend:'up',trendValue:'+0,35%',subtitle:'vs. ontem',borderColor:'#F59E0B'})}
-      ${Components.kpiCard({icon:Components.icon('image',24),iconBg:'#FCE7F3',iconColor:'#9D174D',title:'Anúncios Ativos',value:'24',subtitle:'de 36 anúncios',borderColor:'#EC4899'})}
-      ${Components.kpiCard({icon:Components.icon('chart',24),iconBg:'#CFFAFE',iconColor:'#155E75',title:'Investimento (Mês)',value:'R$ 18.560,00',trend:'up',trendValue:'+8,2%',subtitle:'vs. mês anterior',borderColor:'#06B6D4'})}
+      ${Components.kpiCard({icon:Components.icon('megaphone',24),iconBg:'#D1FAE5',iconColor:'#065F46',title:'Campanhas Ativas',value:stats.campanhasAtivas,subtitle:'de '+campanhas.length+' campanhas',extra:'<div class="kpi-progress" style="background:#E5E7EB;height:6px;border-radius:3px;margin-top:12px;"><div class="kpi-progress-bar" style="background:#10B981;height:100%;width:'+(stats.campanhasAtivas/campanhas.length*100)+'%'+';border-radius:3px;"></div></div>',borderColor:'#10B981'})}
+      ${Components.kpiCard({icon:Components.icon('bar-chart',24),iconBg:'#DBEAFE',iconColor:'#1E40AF',title:'Exibições Hoje',value:stats.exibicoesHoje.toLocaleString('pt-BR'),trend:'up',trendValue:'+12,5%',subtitle:'vs. ontem',borderColor:'#3B82F6'})}
+      ${Components.kpiCard({icon:Components.icon('eye',24),iconBg:'#FEF3C7',iconColor:'#92400E',title:'CTR Médio',value:stats.ctrMedio + '%',trend:'up',trendValue:'+0,35%',subtitle:'vs. ontem',borderColor:'#F59E0B'})}
+      ${Components.kpiCard({icon:Components.icon('image',24),iconBg:'#FCE7F3',iconColor:'#9D174D',title:'Anúncios Ativos',value:stats.anunciosAtivos,subtitle:'de '+stats.totalAnuncios+' anúncios',borderColor:'#EC4899'})}
+      ${Components.kpiCard({icon:Components.icon('chart',24),iconBg:'#CFFAFE',iconColor:'#155E75',title:'Investimento (Mês)',value:'R$ ' + stats.investimentoMes.toLocaleString('pt-BR', {minimumFractionDigits:2}),trend:'up',trendValue:'+8,2%',subtitle:'vs. mês anterior',borderColor:'#06B6D4'})}
     </div>
     
     <!-- Tabs + Filters + Table + Totem Preview -->
@@ -57,7 +57,7 @@ Pages.campanhas = async function() {
             </div>
             <!-- Pagination -->
             <div style="padding:16px 20px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid #E5E7EB;">
-              <span style="font-size:13px;color:#6B7280;">Mostrando 1 a 5 de 18 campanhas</span>
+              <span style="font-size:13px;color:#6B7280;">Mostrando 1 a ${Math.min(5, campanhas.length)} de ${campanhas.length} campanhas</span>
               <div class="pagination" style="display:flex;gap:4px;">
                 <div class="pagination-item" style="padding:4px 10px;border:1px solid #E5E7EB;border-radius:4px;cursor:pointer;">«</div>
                 <div class="pagination-item" style="padding:4px 10px;border:1px solid #E5E7EB;border-radius:4px;cursor:pointer;">‹</div>
@@ -176,20 +176,21 @@ Pages.renderCampanhasTable = function(campanhas) {
         </div>
       </td>
       <td style="padding:12px 20px;">
-        <div style="color:#1A1A2E;">${c.periodo}</div>
-        <div style="font-size:12px;color:#6B7280;">${c.diasRestantes} dias restantes</div>
+        <div style="color:#1A1A2E;">${c.periodo || (c.data_inicio && c.data_fim ? c.data_inicio + ' - ' + c.data_fim : 'Não definido')}</div>
+        <div style="font-size:12px;color:#6B7280;">${c.dias_restantes || 'undefined'} dias restantes</div>
       </td>
-      <td style="padding:12px 20px;"><strong>${c.totens}</strong></td>
+      <td style="padding:12px 20px;"><strong>${c.totens || 0}</strong></td>
       <td style="padding:12px 20px;">
-        <div style="color:#1A1A2E;">${c.anuncios}</div>
-        <div style="font-size:12px;color:#10B981;">${c.progresso}%</div>
+        <div style="color:#1A1A2E;">${c.anuncios || 0}</div>
+        <div style="font-size:12px;color:#10B981;">${c.progresso || 0}%</div>
       </td>
       <td style="padding:12px 20px;color:#1A1A2E;font-weight:500;">${(c.exibicoes || 0).toLocaleString('pt-BR')}</td>
       <td style="padding:12px 20px;color:#1A1A2E;">${(c.ctr || 0).toFixed(2).replace('.', ',')}%</td>
       <td style="padding:12px 20px;color:#1A1A2E;">R$ ${(c.investimento || 0).toFixed(2).replace('.', ',')}</td>
       <td style="padding:12px 20px;">${Components.actionButtons([
-        {icon:'eye',title:'Ver'},
+        {icon:'eye',title:'Visualizar',onclick:`alert('Campanha: ${c.nome}\\nStatus: ${c.status}\\nExibições: ${c.exibicoes || 0}\\nInvestimento: R$ ${(c.investimento || 0).toFixed(2)}')`},
         {icon:'edit',title:'Editar',onclick:`window.Pages.editarCampanha(${c.id})`},
+        {icon:c.status==='ativa'?'pause-circle':'play-circle',title:c.status==='ativa'?'Pausar':'Ativar',onclick:`window.Pages.toggleCampanha(${c.id}, '${c.status}')`},
         {icon:'trash',title:'Excluir',color:'#EF4444',onclick:`window.Pages.excluirCampanha(${c.id})`}
       ])}</td>
     </tr>
@@ -575,6 +576,20 @@ Pages.excluirCampanha = async function(id) {
     } catch(err) {
       console.error(err);
       alert("Erro ao excluir campanha.");
+    }
+  }
+};
+
+Pages.toggleCampanha = async function(id, currentStatus) {
+  const newStatus = currentStatus === 'ativa' ? 'pausada' : 'ativa';
+  const msg = newStatus === 'pausada' ? 'Pausar esta campanha?' : 'Reativar esta campanha?';
+  if(confirm(msg)) {
+    try {
+      await window.supabase.from('campanhas').update({ status: newStatus }).eq('id', id);
+      window.Router.navigate('campanhas');
+    } catch(err) {
+      console.error(err);
+      alert('Erro ao atualizar campanha.');
     }
   }
 };

@@ -2,10 +2,16 @@ window.Pages = window.Pages || {};
 Pages.dashboard = async function() {
   const main = document.getElementById('main-content');
   if(!main) return;
+  
   const stats = await window.AppData.getDashboardStats();
   const totens = await window.AppData.getTotens();
-  const atualizacoes = await window.AppData.getAtualizacoes();
   const campanhas = await window.AppData.getCampanhas();
+  const logs = await window.AppData.getLogs();
+  
+  const online = totens.filter(t => t.status === 'online').length;
+  const offline = totens.filter(t => t.status === 'offline').length;
+  const instalacao = totens.filter(t => t.status === 'instalacao').length;
+  const total = totens.length;
   
   main.innerHTML = `
     <!-- KPI Row: 5 cards -->
@@ -15,10 +21,9 @@ Pages.dashboard = async function() {
         iconBg: '#D1FAE5',
         iconColor: '#065F46',
         title: 'Totens Ativos',
-        value: '28',
-        subtitle: 'de 32 totens',
-        extra: '<div style="background:#E5E7EB;height:6px;border-radius:3px;margin-top:12px;"><div style="background:#10B981;height:100%;width:87.5%;border-radius:3px;"></div></div>',
-        tag: '87.5% online',
+        value: `${stats.totensAtivos || 0} / ${stats.totalTotens || 0}`,
+        subtitle: 'Total de totens',
+        tag: 'Online',
         tagColor: '#10B981',
         borderColor: '#10B981'
       })}
@@ -27,10 +32,8 @@ Pages.dashboard = async function() {
         iconBg: '#DBEAFE',
         iconColor: '#1E40AF',
         title: 'Exibições Hoje',
-        value: '152.430',
-        trend: 'up',
-        trendValue: '+12,5%',
-        subtitle: 'vs. ontem',
+        value: stats.exibicoesHoje ? stats.exibicoesHoje.toLocaleString('pt-BR') : '0',
+        subtitle: 'Total diário',
         variant: 'blue'
       })}
       ${Components.kpiCard({
@@ -38,8 +41,8 @@ Pages.dashboard = async function() {
         iconBg: '#FEF3C7',
         iconColor: '#92400E',
         title: 'Linhas Ativas',
-        value: '45',
-        subtitle: '5 atualizações hoje',
+        value: stats.linhasAtivas ? stats.linhasAtivas.toString() : '0',
+        subtitle: 'Em operação',
         variant: 'orange'
       })}
       ${Components.kpiCard({
@@ -47,8 +50,8 @@ Pages.dashboard = async function() {
         iconBg: '#FCE7F3',
         iconColor: '#9D174D',
         title: 'Campanhas Ativas',
-        value: '12',
-        subtitle: '3 terminam hoje',
+        value: stats.campanhasAtivas ? stats.campanhasAtivas.toString() : '0',
+        subtitle: 'Rodando agora',
         variant: 'red'
       })}
       ${Components.kpiCard({
@@ -56,7 +59,7 @@ Pages.dashboard = async function() {
         iconBg: '#FEE2E2',
         iconColor: '#991B1B',
         title: 'Alertas',
-        value: '3',
+        value: stats.alertas ? stats.alertas.toString() : '0',
         subtitle: 'Requerem atenção',
         variant: 'red'
       })}
@@ -69,7 +72,7 @@ Pages.dashboard = async function() {
         <div class="card-header">Mapa dos Totens</div>
         <div class="card-body">
           <div id="map-container" style="height:300px;background:#e5e7eb;border-radius:8px;position:relative;overflow:hidden;">
-            <div id="dashboard-map"></div>
+            <div id="dashboard-map" style="height:300px;width:100%;"></div>
           </div>
           <div class="map-legend" style="display:flex;gap:16px;margin-top:12px;justify-content:center;font-size:13px;">
             <span class="legend-item" style="display:flex;align-items:center;gap:6px;"><span class="status-dot" style="width:10px;height:10px;border-radius:50%;background:#10B981"></span> Online</span>
@@ -132,93 +135,128 @@ Pages.dashboard = async function() {
   // Render donut chart
   setTimeout(() => {
     Charts.donut('status-donut', [
-      { label: 'Online', value: 28, color: '#10B981' },
-      { label: 'Offline', value: 3, color: '#EF4444' },
-      { label: 'Instalação', value: 1, color: '#F59E0B' }
-    ], { text: '28', subtext: 'Total' });
+      { label: 'Online', value: online, color: '#10B981' },
+      { label: 'Offline', value: offline, color: '#EF4444' },
+      { label: 'Instalação', value: instalacao, color: '#F59E0B' }
+    ], { text: total.toString(), subtext: 'Total' });
   }, 100);
   
   // Render status legend
+  const pctOnline = total ? ((online / total) * 100).toFixed(1).replace('.', ',') : '0,0';
+  const pctOffline = total ? ((offline / total) * 100).toFixed(1).replace('.', ',') : '0,0';
+  const pctInst = total ? ((instalacao / total) * 100).toFixed(1).replace('.', ',') : '0,0';
+
   document.getElementById('status-legend').innerHTML = `
     <div style="display:flex;flex-direction:column;gap:12px;font-size:13px;">
-      <div class="legend-item" style="display:flex;justify-content:space-between;"><span style="display:flex;align-items:center;gap:8px;"><span class="status-dot" style="width:10px;height:10px;border-radius:50%;background:#10B981"></span> Online</span> <strong>28 <span style="color:#6B7280;font-weight:400;">(87,5%)</span></strong></div>
-      <div class="legend-item" style="display:flex;justify-content:space-between;"><span style="display:flex;align-items:center;gap:8px;"><span class="status-dot" style="width:10px;height:10px;border-radius:50%;background:#EF4444"></span> Offline</span> <strong>3 <span style="color:#6B7280;font-weight:400;">(9,4%)</span></strong></div>
-      <div class="legend-item" style="display:flex;justify-content:space-between;"><span style="display:flex;align-items:center;gap:8px;"><span class="status-dot" style="width:10px;height:10px;border-radius:50%;background:#F59E0B"></span> Instalação</span> <strong>1 <span style="color:#6B7280;font-weight:400;">(3,1%)</span></strong></div>
+      <div class="legend-item" style="display:flex;justify-content:space-between;"><span style="display:flex;align-items:center;gap:8px;"><span class="status-dot" style="width:10px;height:10px;border-radius:50%;background:#10B981"></span> Online</span> <strong>${online} <span style="color:#6B7280;font-weight:400;">(${pctOnline}%)</span></strong></div>
+      <div class="legend-item" style="display:flex;justify-content:space-between;"><span style="display:flex;align-items:center;gap:8px;"><span class="status-dot" style="width:10px;height:10px;border-radius:50%;background:#EF4444"></span> Offline</span> <strong>${offline} <span style="color:#6B7280;font-weight:400;">(${pctOffline}%)</span></strong></div>
+      <div class="legend-item" style="display:flex;justify-content:space-between;"><span style="display:flex;align-items:center;gap:8px;"><span class="status-dot" style="width:10px;height:10px;border-radius:50%;background:#F59E0B"></span> Instalação</span> <strong>${instalacao} <span style="color:#6B7280;font-weight:400;">(${pctInst}%)</span></strong></div>
     </div>
   `;
   
   // Render recent totems
   const tbody = document.getElementById('recent-totems-body');
   totens.slice(0, 5).forEach(t => {
+    const ultimaConexaoFormatada = t.ultima_conexao ? new Date(t.ultima_conexao).toLocaleString('pt-BR') : 'Nunca';
+    const acoesHtml = `
+      <div style="display:flex;gap:4px;">
+        <button class="btn-icon" title="Visualizar" onclick="window.TotensController.openDetalhesModal('${encodeURIComponent(JSON.stringify(t)).replace(/'/g, '%27')}')">${Components.icon('eye', 16)}</button>
+        <button class="btn-icon" title="Ir para Totens" onclick="window.Router.navigate('totens')">${Components.icon('edit', 16)}</button>
+        <button class="btn-icon" title="Gerar Acesso" onclick="window.TotensController.fireAction && window.TotensController.fireAction('Gerar Acesso')">${Components.icon('link', 16)}</button>
+      </div>
+    `;
+    
     tbody.innerHTML += `
       <tr>
-        <td>${t.nome}</td>
-        <td>${t.localizacao}</td>
+        <td>${t.nome || '-'}</td>
+        <td>${t.localizacao || '-'}</td>
         <td>${Components.badge(t.status)}</td>
-        <td>${t.ultimaConexao}</td>
-        <td>${t.versao}</td>
-        <td>${Components.actionButtons([{icon:'eye',title:'Ver'},{icon:'edit',title:'Editar'},{icon:'settings',title:'Config'}])}</td>
+        <td>${ultimaConexaoFormatada}</td>
+        <td>${t.versao || '-'}</td>
+        <td>${acoesHtml}</td>
       </tr>
     `;
   });
   
-  // Render recent updates
+  // Render recent updates from logs
   const updatesContainer = document.getElementById('recent-updates');
-  atualizacoes.forEach(u => {
-    const iconBg = u.tipo === 'linha' ? '#DBEAFE' : u.tipo === 'mapa' ? '#EDE9FE' : u.tipo === 'campanha' ? '#FEF3C7' : '#CFFAFE';
-    const iconSvg = u.tipo === 'linha' ? Components.icon('bus', 18) : u.tipo === 'mapa' ? Components.icon('map-pin', 18) : u.tipo === 'campanha' ? Components.icon('megaphone', 18) : Components.icon('info', 18);
-    updatesContainer.innerHTML += Components.updateItem({
-      icon: iconSvg,
-      iconBg: iconBg,
-      title: u.titulo,
-      subtitle: u.descricao,
-      badge: u.badge,
-      badgeColor: u.badgeColor
+  if (!logs || logs.length === 0) {
+    updatesContainer.innerHTML = '<div style="padding: 16px; text-align: center; color: #6b7280;">Nenhum log recente.</div>';
+  } else {
+    logs.slice(0, 5).forEach(l => {
+      updatesContainer.innerHTML += Components.updateItem({
+        icon: Components.icon('info', 18),
+        iconBg: '#CFFAFE',
+        title: l.acao || 'Log',
+        subtitle: l.detalhes || '',
+        badge: l.data ? new Date(l.data).toLocaleDateString('pt-BR') : '',
+        badgeColor: '#E5E7EB'
+      });
     });
-  });
+  }
   
   // Render best campaigns
   const bestCampaigns = document.getElementById('best-campaigns');
-  campanhas.slice(0, 3).forEach(c => {
-    bestCampaigns.innerHTML += `
-      <div class="campaign-perf-item" style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #F3F4F6;">
-        <div style="width:40px;height:40px;border-radius:10px;background:${c.id===1?'#2D9B5A':c.id===2?'#DC2626':c.id===3?'#3B82F6':'#6B7280'};display:flex;align-items:center;justify-content:center;color:white;font-size:16px;">📢</div>
-        <div style="flex:1;">
-          <div style="font-weight:600;font-size:13px;">${c.nome}</div>
-          <div style="font-size:12px;color:#6B7280;">${c.totens} totens</div>
+  if (!campanhas || campanhas.length === 0) {
+    bestCampaigns.innerHTML = '<div style="padding: 16px; text-align: center; color: #6b7280;">Nenhuma campanha encontrada.</div>';
+  } else {
+    campanhas.slice(0, 3).forEach((c, index) => {
+      const colors = ['#2D9B5A', '#DC2626', '#3B82F6'];
+      const bgColor = colors[index % colors.length];
+      bestCampaigns.innerHTML += `
+        <div class="campaign-perf-item" style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #F3F4F6;">
+          <div style="width:40px;height:40px;border-radius:10px;background:${bgColor};display:flex;align-items:center;justify-content:center;color:white;font-size:16px;">📢</div>
+          <div style="flex:1;">
+            <div style="font-weight:600;font-size:13px;">${c.nome || '-'}</div>
+            <div style="font-size:12px;color:#6B7280;">${c.totens || 0} totens</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:13px;font-weight:600;">${(c.exibicoes || 0).toLocaleString('pt-BR')} exibições</div>
+            <div style="font-size:12px;color:#10B981;">CTR ${(c.ctr || 0).toFixed(2).replace('.', ',')}%</div>
+          </div>
         </div>
-        <div style="text-align:right;">
-          <div style="font-size:13px;font-weight:600;">${(c.exibicoes || 0).toLocaleString('pt-BR')} exibições</div>
-          <div style="font-size:12px;color:#10B981;">CTR ${(c.ctr || 0).toFixed(2).replace('.', ',')}%</div>
-        </div>
-      </div>
-    `;
-  });
+      `;
+    });
+  }
   
-  // Render simple map
-  renderDashboardMap(totens);
+  // Render Leaflet map
+  setTimeout(() => {
+    renderDashboardMap(totens);
+  }, 200);
 };
 
 function renderDashboardMap(totens) {
   const container = document.getElementById('dashboard-map');
-  if (!container) return;
-  const mapHtml = `
-    <svg width="100%" height="100%" viewBox="0 0 400 300" style="background:#e8f4f0;">
-      <rect width="400" height="300" fill="#E8F0E8" rx="8"/>
-      <line x1="50" y1="100" x2="350" y2="150" stroke="#ccc" stroke-width="2"/>
-      <line x1="100" y1="50" x2="200" y2="280" stroke="#ccc" stroke-width="2"/>
-      <line x1="200" y1="30" x2="350" y2="200" stroke="#ccc" stroke-width="1.5"/>
-      <text x="80" y="80" font-size="11" fill="#666" font-family="Inter, sans-serif">SERRA</text>
-      <text x="280" y="200" font-size="11" fill="#666" font-family="Inter, sans-serif">VITÓRIA</text>
-      <text x="180" y="260" font-size="10" fill="#888" font-family="Inter, sans-serif">MANGUEIRAL</text>
-      ${totens.slice(0, 15).map((t, i) => {
-        const x = 60 + (i * 22) % 280;
-        const y = 60 + (i * 37) % 200;
-        const color = t.status === 'online' ? '#10B981' : t.status === 'offline' ? '#EF4444' : '#F59E0B';
-        return `<circle cx="${x}" cy="${y}" r="5" fill="${color}" stroke="white" stroke-width="2"/>`;
-      }).join('')}
-    </svg>
-  `;
-  container.innerHTML = mapHtml;
-  container.style.height = '100%';
+  if (!container || !window.L) return;
+
+  // Initialize Leaflet Map
+  const map = L.map('dashboard-map').setView([-20.2108, -40.2573], 12);
+  
+  // CartoDB Dark Tiles
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+    subdomains: 'abcd',
+    maxZoom: 20
+  }).addTo(map);
+
+  // Add markers
+  totens.forEach(t => {
+    const lat = t.latitude || -20.2108;
+    const lng = t.longitude || -40.2573;
+    
+    let color = '#F59E0B'; // instalacao
+    if (t.status === 'online') color = '#10B981';
+    else if (t.status === 'offline') color = '#EF4444';
+    
+    const marker = L.circleMarker([lat, lng], {
+      radius: 6,
+      fillColor: color,
+      color: '#fff',
+      weight: 1,
+      opacity: 1,
+      fillOpacity: 0.8
+    }).addTo(map);
+    
+    marker.bindPopup(`<b>${t.nome || 'Totem'}</b><br/>Status: ${t.status}`);
+  });
 }
