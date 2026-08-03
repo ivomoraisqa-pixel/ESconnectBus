@@ -302,3 +302,28 @@ INSERT INTO public.activation_keys (codigo, token, totem_id) VALUES
 ('13-XT5L', 'tok_abc123', 1),
 ('14-88N0', 'tok_def456', 2),
 ('17-6VLH', 'tok_ghi789', 3);
+
+-- ==========================================
+-- DESIGNER DE LAYOUT DO TOTEM
+-- ==========================================
+CREATE TABLE IF NOT EXISTS public.totem_layouts (
+  id SERIAL PRIMARY KEY,
+  nome TEXT NOT NULL,
+  descricao TEXT,
+  layout_data JSONB NOT NULL DEFAULT '{}',
+  thumbnail TEXT,
+  is_template BOOLEAN DEFAULT false,
+  status TEXT DEFAULT 'rascunho' CHECK (status IN ('rascunho','publicado','arquivado')),
+  created_by TEXT,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS public.totem_layout_assignments (
+  id SERIAL PRIMARY KEY,
+  layout_id INT REFERENCES public.totem_layouts(id) ON DELETE CASCADE,
+  totem_id INT REFERENCES public.totens(id) ON DELETE CASCADE,
+  ativo BOOLEAN DEFAULT true,
+  published_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT now()
+);

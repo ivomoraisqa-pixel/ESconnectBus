@@ -24,7 +24,8 @@
     'logs': { render: Pages.logs, title: 'Logs do Sistema', subtitle: 'Registros de atividades do sistema' },
     'informativos-novo': { render: Pages.informativosNovo, title: 'Novo Informativo', subtitle: 'Criar informativo da prefeitura' },
     'simulador': { render: Pages.simulador, title: 'Simulador do Totem', subtitle: 'Simulação idêntica ao dispositivo físico' },
-    'mapa-operacional': { render: Pages.mapaOperacional, title: 'Mapa Operacional', subtitle: 'Visão global em tempo real' }
+    'mapa-operacional': { render: Pages.mapaOperacional, title: 'Mapa Operacional', subtitle: 'Visão global em tempo real' },
+    'designer': { render: Pages.designer, title: 'Designer de Layout', subtitle: 'Editor visual de layout do totem com drag & drop' }
   };
   
   Object.keys(pages).forEach(key => window.Router.register(key, pages[key]));

@@ -1,0 +1,653 @@
+/* ================================================
+   DESIGNER DE LAYOUT DO TOTEM - CSS
+   ================================================ */
+
+/* Layout principal do designer - 3 colunas */
+.designer-layout {
+  display: grid;
+  grid-template-columns: 240px 1fr 320px;
+  gap: 0;
+  height: calc(100vh - 140px);
+  background: #F3F4F6;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* === PALETA DE COMPONENTES (esquerda) === */
+.designer-palette {
+  background: white;
+  border-right: 1px solid #E5E7EB;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.designer-palette-header {
+  padding: 16px;
+  font-weight: 700;
+  font-size: 13px;
+  color: #374151;
+  border-bottom: 1px solid #E5E7EB;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: #F9FAFB;
+}
+
+.designer-palette-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.palette-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: grab;
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+  transition: all 0.15s;
+  border: 1px solid transparent;
+  user-select: none;
+}
+
+.palette-item:hover {
+  background: #EFF6FF;
+  border-color: #BFDBFE;
+  color: #1E40AF;
+}
+
+.palette-item:active {
+  cursor: grabbing;
+  transform: scale(0.97);
+}
+
+.palette-item .palette-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.designer-palette-templates {
+  border-top: 1px solid #E5E7EB;
+  padding: 12px;
+}
+
+.designer-palette-templates .designer-palette-header {
+  border-bottom: none;
+  padding: 0 0 8px 0;
+  background: none;
+}
+
+.template-btn {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  margin-bottom: 4px;
+  background: #F9FAFB;
+  border: 1px solid #E5E7EB;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s;
+}
+
+.template-btn:hover {
+  background: #EFF6FF;
+  border-color: #3B82F6;
+  color: #1E40AF;
+}
+
+/* === CANVAS CENTRAL === */
+.designer-canvas-area {
+  background: #E5E7EB;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+  position: relative;
+  padding: 24px;
+}
+
+.designer-canvas-wrapper {
+  position: relative;
+  background: #1A1A2E;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3), 0 0 0 4px #374151;
+}
+
+.designer-canvas {
+  position: relative;
+  width: 360px;
+  height: 640px;
+  overflow: hidden;
+  cursor: crosshair;
+}
+
+.designer-canvas.drag-over {
+  outline: 3px dashed #3B82F6;
+  outline-offset: -3px;
+}
+
+/* Componente no canvas */
+.canvas-component {
+  position: absolute;
+  border: 2px solid transparent;
+  cursor: move;
+  transition: border-color 0.1s, box-shadow 0.1s;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Inter', sans-serif;
+}
+
+.canvas-component:hover {
+  border-color: rgba(59, 130, 246, 0.5);
+}
+
+.canvas-component.selected {
+  border-color: #3B82F6;
+  box-shadow: 0 0 0 1px #3B82F6, 0 0 12px rgba(59,130,246,0.2);
+}
+
+.canvas-component .component-label {
+  position: absolute;
+  top: -20px;
+  left: 0;
+  background: #3B82F6;
+  color: white;
+  font-size: 9px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px 4px 0 0;
+  white-space: nowrap;
+  display: none;
+}
+
+.canvas-component.selected .component-label,
+.canvas-component:hover .component-label {
+  display: block;
+}
+
+/* Handles de redimensionamento */
+.resize-handle {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: white;
+  border: 2px solid #3B82F6;
+  border-radius: 2px;
+  display: none;
+  z-index: 100;
+}
+
+.canvas-component.selected .resize-handle {
+  display: block;
+}
+
+.resize-handle.nw { top: -4px; left: -4px; cursor: nw-resize; }
+.resize-handle.ne { top: -4px; right: -4px; cursor: ne-resize; }
+.resize-handle.sw { bottom: -4px; left: -4px; cursor: sw-resize; }
+.resize-handle.se { bottom: -4px; right: -4px; cursor: se-resize; }
+.resize-handle.n { top: -4px; left: 50%; transform: translateX(-50%); cursor: n-resize; }
+.resize-handle.s { bottom: -4px; left: 50%; transform: translateX(-50%); cursor: s-resize; }
+.resize-handle.w { top: 50%; left: -4px; transform: translateY(-50%); cursor: w-resize; }
+.resize-handle.e { top: 50%; right: -4px; transform: translateY(-50%); cursor: e-resize; }
+
+/* Guias de alinhamento (snap lines) */
+.snap-line {
+  position: absolute;
+  background: #EF4444;
+  z-index: 200;
+  pointer-events: none;
+}
+
+.snap-line.horizontal {
+  height: 1px;
+  left: 0;
+  right: 0;
+}
+
+.snap-line.vertical {
+  width: 1px;
+  top: 0;
+  bottom: 0;
+}
+
+/* Drop placeholder */
+.drop-placeholder {
+  position: absolute;
+  border: 2px dashed #3B82F6;
+  background: rgba(59, 130, 246, 0.08);
+  border-radius: 8px;
+  pointer-events: none;
+  z-index: 50;
+}
+
+/* Canvas empty state */
+.canvas-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: rgba(255,255,255,0.4);
+  text-align: center;
+  padding: 40px;
+  pointer-events: none;
+}
+
+.canvas-empty-state .empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.canvas-empty-state h3 {
+  font-size: 16px;
+  margin-bottom: 8px;
+  color: rgba(255,255,255,0.6);
+}
+
+.canvas-empty-state p {
+  font-size: 12px;
+  color: rgba(255,255,255,0.3);
+}
+
+/* === PAINEL DIREITO (Preview + Propriedades) === */
+.designer-right-panel {
+  background: white;
+  border-left: 1px solid #E5E7EB;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.designer-right-tabs {
+  display: flex;
+  border-bottom: 1px solid #E5E7EB;
+  background: #F9FAFB;
+}
+
+.designer-right-tab {
+  flex: 1;
+  padding: 10px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6B7280;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s;
+}
+
+.designer-right-tab.active {
+  color: #3B82F6;
+  border-bottom-color: #3B82F6;
+  background: white;
+}
+
+.designer-right-content {
+  flex: 1;
+  overflow-y: auto;
+}
+
+/* Preview do totem no painel direito */
+.designer-preview-container {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.designer-preview-frame {
+  width: 180px;
+  height: 320px;
+  background: #1A1A2E;
+  border: 6px solid #374151;
+  border-radius: 16px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+}
+
+.designer-preview-label {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #6B7280;
+  font-weight: 600;
+}
+
+.designer-preview-label .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10B981;
+  animation: pulse 2s infinite;
+}
+
+/* Propriedades do componente selecionado */
+.designer-props {
+  padding: 16px;
+}
+
+.designer-props-empty {
+  padding: 40px 20px;
+  text-align: center;
+  color: #9CA3AF;
+  font-size: 13px;
+}
+
+.designer-props-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #374151;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #E5E7EB;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.prop-group {
+  margin-bottom: 12px;
+}
+
+.prop-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6B7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.prop-input {
+  width: 100%;
+  padding: 6px 10px;
+  border: 1px solid #D1D5DB;
+  border-radius: 6px;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.15s;
+  box-sizing: border-box;
+}
+
+.prop-input:focus {
+  border-color: #3B82F6;
+}
+
+.prop-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.prop-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #E5E7EB;
+}
+
+.prop-action-btn {
+  padding: 6px 10px;
+  border: 1px solid #D1D5DB;
+  border-radius: 6px;
+  background: white;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  color: #374151;
+}
+
+.prop-action-btn:hover {
+  background: #F3F4F6;
+  border-color: #9CA3AF;
+}
+
+.prop-action-btn.danger {
+  color: #EF4444;
+  border-color: #FECACA;
+}
+
+.prop-action-btn.danger:hover {
+  background: #FEF2F2;
+  border-color: #EF4444;
+}
+
+/* === TOOLBAR DO DESIGNER === */
+.designer-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: white;
+  border-bottom: 1px solid #E5E7EB;
+  border-radius: 12px 12px 0 0;
+}
+
+.designer-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.designer-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.toolbar-input {
+  padding: 6px 12px;
+  border: 1px solid #D1D5DB;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1F2937;
+  outline: none;
+  width: 240px;
+}
+
+.toolbar-input:focus {
+  border-color: #3B82F6;
+}
+
+.toolbar-btn {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #D1D5DB;
+  background: white;
+  color: #374151;
+  transition: all 0.15s;
+}
+
+.toolbar-btn:hover {
+  background: #F3F4F6;
+}
+
+.toolbar-btn.primary {
+  background: #2D9B5A;
+  color: white;
+  border-color: #2D9B5A;
+}
+
+.toolbar-btn.primary:hover {
+  background: #248A4E;
+}
+
+.toolbar-btn.publish {
+  background: #3B82F6;
+  color: white;
+  border-color: #3B82F6;
+}
+
+.toolbar-btn.publish:hover {
+  background: #2563EB;
+}
+
+/* === Animações === */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.canvas-component {
+  animation: fadeIn 0.2s ease-out;
+}
+
+/* Conteúdo interno dos componentes no canvas */
+.comp-inner-map {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #1a2a1a, #1a3a2a);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #2D9B5A;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.comp-inner-buslist {
+  width: 100%;
+  height: 100%;
+  background: white;
+  color: #1A1A2E;
+  font-size: 9px;
+  display: flex;
+  flex-direction: column;
+}
+
+.comp-inner-buslist .bus-header {
+  background: #2D9B5A;
+  color: white;
+  padding: 4px 8px;
+  font-weight: 700;
+  font-size: 9px;
+}
+
+.comp-inner-clock {
+  width: 100%;
+  height: 100%;
+  background: #1A1A2E;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+}
+
+.comp-inner-weather {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #0EA5E9, #06B6D4);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 11px;
+}
+
+.comp-inner-banner {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #F59E0B, #D97706);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.comp-inner-news {
+  width: 100%;
+  height: 100%;
+  background: #F9FAFB;
+  color: #374151;
+  font-size: 9px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.comp-inner-qr {
+  width: 100%;
+  height: 100%;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.comp-inner-logo {
+  width: 100%;
+  height: 100%;
+  background: #1A1A2E;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 800;
+  font-size: 14px;
+}
+
+.comp-inner-text {
+  width: 100%;
+  height: 100%;
+  background: rgba(255,255,255,0.05);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  padding: 8px;
+  text-align: center;
+}
+
+.comp-inner-video {
+  width: 100%;
+  height: 100%;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+  font-size: 24px;
+}
