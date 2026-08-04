@@ -4,8 +4,10 @@ Pages.campanhas = async function() {
   if(!main) return;
   const stats = await window.AppData.getDashboardStats();
   const campanhas = await window.AppData.getCampanhas();
+  window._campanhasList = campanhas; // Store globally for preview
   const campaignPerformance = window.AppData.getCampaignPerformance ? await window.AppData.getCampaignPerformance() : window.AppData.campaignPerformance;
   const invData = await window.AppData.getInvestimentoRetorno();
+  const totens = window.AppData.getTotens ? await window.AppData.getTotens() : [];
   
   main.innerHTML = `
     <!-- KPI Row -->
@@ -77,7 +79,14 @@ Pages.campanhas = async function() {
       <div class="card totem-preview-card" style="background:white;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.1);align-self:start;">
         <div class="card-header" style="padding:16px 20px;border-bottom:1px solid #F3F4F6;font-weight:600;display:flex;justify-content:space-between;align-items:center;">
           Preview do Totem 
-          <span style="font-size:12px;color:#6B7280;font-weight:400;">Totem Carone Mall</span>
+          <select id="preview-totem-select" onchange="window.Pages.atualizarTotemPreview()" style="font-size:12px; padding:4px 8px; border:1px solid #E5E7EB; border-radius:4px; max-width:160px; outline:none;">
+            ${totens.map(t => {
+              const regiao = t.localizacao ? t.localizacao.split(',')[0].toUpperCase() : 'SERRA';
+              const local = t.nome.toUpperCase();
+              return `<option value="${regiao}|${local}">${t.nome}</option>`;
+            }).join('')}
+            ${totens.length === 0 ? '<option value="SERRA|CARONE MALL">Totem Carone Mall</option>' : ''}
+          </select>
         </div>
         <div class="card-body" style="padding:20px;background:#F9FAFB;display:flex;justify-content:center;">
           <div class="totem-mini-preview" id="totem-preview" style="width:200px;box-shadow:0 10px 25px rgba(0,0,0,0.15);border-radius:12px;border:6px solid #374151;">
@@ -188,7 +197,7 @@ Pages.renderCampanhasTable = function(campanhas) {
       <td style="padding:12px 20px;color:#1A1A2E;">${(c.ctr || 0).toFixed(2).replace('.', ',')}%</td>
       <td style="padding:12px 20px;color:#1A1A2E;">R$ ${(c.investimento || 0).toFixed(2).replace('.', ',')}</td>
       <td style="padding:12px 20px;">${Components.actionButtons([
-        {icon:'eye',title:'Visualizar',onclick:`alert('Campanha: ${c.nome}\\nStatus: ${c.status}\\nExibições: ${c.exibicoes || 0}\\nInvestimento: R$ ${(c.investimento || 0).toFixed(2)}')`},
+        {icon:'eye',title:'Visualizar',onclick:`window.Pages.verCampanhaPreview(${c.id})`},
         {icon:'edit',title:'Editar',onclick:`window.Pages.editarCampanha(${c.id})`},
         {icon:c.status==='ativa'?'pause-circle':'play-circle',title:c.status==='ativa'?'Pausar':'Ativar',onclick:`window.Pages.toggleCampanha(${c.id}, '${c.status}')`},
         {icon:'trash',title:'Excluir',color:'#EF4444',onclick:`window.Pages.excluirCampanha(${c.id})`}
@@ -220,8 +229,8 @@ Pages.renderTotemPreview = function() {
   preview.innerHTML = `
     <div style="background:#1A1A2E;border-radius:4px;overflow:hidden;color:white;font-family:Inter,sans-serif;font-size:10px;">
       <div style="display:flex;justify-content:space-between;padding:8px 10px;">
-        <div><strong>SERRA</strong><br><span style='font-size:8px;'>CARONE MALL</span></div>
-        <div style="text-align:right;"><strong>10:45</strong><br><span style='font-size:8px;'>23/05/2025</span></div>
+        <div><strong id="preview-totem-cidade">SERRA</strong><br><span id="preview-totem-local" style='font-size:8px;'>CARONE MALL</span></div>
+        <div style="text-align:right;"><strong>${new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</strong><br><span style='font-size:8px;'>${new Date().toLocaleDateString('pt-BR')}</span></div>
       </div>
       <div style="background:#2D9B5A;padding:4px 10px;font-weight:700;font-size:9px;">PRÓXIMOS ÔNIBUS</div>
       <div style="background:white;color:#1A1A2E;">
@@ -246,7 +255,56 @@ Pages.renderTotemPreview = function() {
       </div>
     </div>
   `;
+  window.Pages.atualizarTotemPreview();
 };
+
+Pages.atualizarTotemPreview = function() {
+  const select = document.getElementById('preview-totem-select');
+  if(!select) return;
+  const val = select.value.split('|');
+  const cidade = document.getElementById('preview-totem-cidade');
+  const local = document.getElementById('preview-totem-local');
+  if(cidade && local) {
+    cidade.innerText = val[0] || 'SERRA';
+    local.innerText = val[1] || 'CARONE MALL';
+  }
+};
+
+Pages.verCampanhaPreview = function(id) {
+  if(!window._campanhasList) return;
+  const c = window._campanhasList.find(x => x.id === id);
+  if(!c) return;
+  
+  // Highlight the row temporarily or just show the preview
+  const preview = document.getElementById('totem-preview');
+  if(!preview) return;
+  
+  // Update the media area within the preview
+  // We'll replace the static map/ad section with the selected campaign's media
+  const parts = c.descricao ? c.descricao.split('|') : [];
+  const clienteStr = parts[0] ? parts[0].replace('Cliente: ', '').trim() : 'Anunciante';
+  
+  // Inject an overlay or replace the content of the preview to show the campaign
+  const mapArea = preview.querySelector('div[style*="MAPA DE LINHAS"]')?.parentElement;
+  if(mapArea) {
+    mapArea.innerHTML = `
+      <div style="height:100px; background:#000; color:white; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:10px;">
+        <div style="color:#F59E0B; font-weight:800; font-size:11px;">${c.nome.toUpperCase()}</div>
+        <div style="font-weight:600; font-size:8px; margin-top:4px;">${clienteStr}</div>
+        <div style="width:100%; height:40px; background:#374151; margin-top:8px; border-radius:4px; display:flex; align-items:center; justify-content:center; font-size:8px; color:#9CA3AF;">[ MÍDIA: ${c.formato ? c.formato.toUpperCase() : 'IMAGEM'} ]</div>
+      </div>
+    `;
+  }
+  
+  // Also simulate a visual pulse on the preview container
+  preview.style.transform = 'scale(1.02)';
+  preview.style.boxShadow = '0 0 0 4px #3B82F6, 0 10px 25px rgba(0,0,0,0.15)';
+  setTimeout(() => {
+    preview.style.transform = 'scale(1)';
+    preview.style.boxShadow = '0 10px 25px rgba(0,0,0,0.15)';
+  }, 300);
+};
+
 
 Pages.novaCampanha = async function() {
   const main = document.getElementById('main-content');
@@ -572,7 +630,7 @@ Pages.excluirCampanha = async function(id) {
     try {
       await window.AppData.deleteCampanha(id);
       alert("Campanha excluída com sucesso.");
-      window.Router.navigate("campanhas");
+      window.Router.handleRoute(); // Force reload the page content
     } catch(err) {
       console.error(err);
       alert("Erro ao excluir campanha.");
@@ -586,7 +644,7 @@ Pages.toggleCampanha = async function(id, currentStatus) {
   if(confirm(msg)) {
     try {
       await window.supabase.from('campanhas').update({ status: newStatus }).eq('id', id);
-      window.Router.navigate('campanhas');
+      window.Router.handleRoute(); // Force reload the page content
     } catch(err) {
       console.error(err);
       alert('Erro ao atualizar campanha.');
