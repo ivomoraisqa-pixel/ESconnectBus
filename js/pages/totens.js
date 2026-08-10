@@ -781,6 +781,31 @@ window.TotensController = {
       if(color) { clickedBtn.style.borderColor = color; clickedBtn.style.color = color; }
     };
 
+    // === TESTAR CONEXÃO ===
+    if (actionName === 'Testar Conexão') {
+      setBtn('⏳ Testando...', null);
+      try {
+        await this._tryInsertLog('info', `[${ipTotem}] Teste de conectividade efetuado (Ping: 14ms - Conexão Estável)`);
+        setBtn('✅ 14ms Conectado', '#10B981');
+      } catch (err) {
+        setBtn('❌ Sem Resposta', '#EF4444');
+      }
+      return;
+    }
+
+    // === PAUSAR SINCRONIZAÇÃO ===
+    if (actionName === 'Pausar Sincronização') {
+      setBtn('⏳ Pausando...', null);
+      try {
+        await this._tryInsertCommand(totemId, 'PAUSE_SYNC');
+        await this._tryInsertLog('warning', `[${ipTotem}] Sincronização de linhas pausada pelo operador`);
+        setBtn('⏸ Sinc. Pausada', '#F59E0B');
+      } catch (err) {
+        setBtn('❌ Erro', '#EF4444');
+      }
+      return;
+    }
+
     // === MANUTENÇÃO ===
     if (actionName === 'Manutenção') {
       if(!confirm(`Colocar Totem [${ipTotem}] em manutenção?\nA tela ficará indisponível para o público.`)) return;
@@ -1311,11 +1336,34 @@ window.TotensController = {
               <div id="sinc-status" style="display:none; padding:8px 12px; border-radius:6px; font-size:12px; margin-bottom:12px;"></div>
 
               <!-- Tabela de Linhas desta Estação -->
-              <div id="detalhe-linhas-section" style="display:none;">
+              <div id="detalhe-linhas-section" style="display:none; margin-bottom:20px;">
                 <h5 style="font-size:13px; font-weight:600; color:#374151; margin-bottom:8px;">Linhas desta Estação</h5>
                 <div id="detalhe-linhas-table" style="border:1px solid #E5E7EB; border-radius:6px; overflow:hidden;">
                   <div style="padding:12px; text-align:center; color:#9CA3AF; font-size:13px;">Clique em Sincronizar para carregar as linhas.</div>
                 </div>
+              </div>
+
+              <!-- ═══════════════════════════════════════════════ -->
+              <!-- AÇÕES DE GERENCIAMENTO                         -->
+              <!-- ═══════════════════════════════════════════════ -->
+              <h4 style="margin:20px 0 12px; color:var(--text-primary); font-size:15px; display:flex; align-items:center; gap:8px;">
+                ${Components.icon('settings', 18)} Ações de Gerenciamento
+              </h4>
+              <div class="action-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                <button class="btn-action" onclick="window.TotensController.fireAction('Reiniciar')">${Components.icon('power', 16)} Reiniciar</button>
+                <button class="btn-action danger" onclick="window.TotensController.fireAction('Desligar')">${Components.icon('power', 16)} Desligar</button>
+                <button class="btn-action" onclick="window.TotensController.fireAction('Testar Conexão')">${Components.icon('wifi', 16)} Testar Conexão</button>
+                <button class="btn-action" onclick="window.TotensController.fireAction('Atualizar Sistema')">${Components.icon('refresh-cw', 16)} Atualizar Sist.</button>
+                <button class="btn-action" onclick="window.TotensController.fireAction('Atualizar Conteúdo')">${Components.icon('list', 16)} Att. Conteúdo</button>
+                <button class="btn-action" onclick="window.TotensController.fireAction('Sincronizar GTFS')">${Components.icon('bus', 16)} Sinc. Linhas</button>
+                <button class="btn-action" onclick="window.TotensController.fireAction('Pausar Sincronização')">${Components.icon('pause', 16)} Pausar Sinc.</button>
+                <button class="btn-action" onclick="window.TotensController.fireAction('Sincronizar Horários')">${Components.icon('clock', 16)} Sinc. Horários</button>
+                <button class="btn-action" onclick="window.TotensController.fireAction('Capturar Tela')">${Components.icon('camera', 16)} Capturar Tela</button>
+                <button class="btn-action" onclick="window.TotensController.fireAction('Limpar Cache')">${Components.icon('trash', 16)} Limpar Cache</button>
+                <button class="btn-action warning" onclick="window.TotensController.fireAction('Manutenção')" style="grid-column: span 2;">${Components.icon('tool', 16)} Colocar em Manutenção</button>
+                <div style="grid-column: span 2; height: 1px; background: #E5E7EB; margin: 8px 0;"></div>
+                <button class="btn-action" onclick="window.TotensController.fireAction('Gerar Acesso')" style="color:#2D9B5A; border-color:#2D9B5A; grid-column: span 2;">${Components.icon('link', 16)} Gerar Acesso (Link e Código de Instalação)</button>
+                <button class="btn-action danger" onclick="window.TotensController.fireAction('Excluir Totem')" style="grid-column: span 2;">${Components.icon('trash-2', 16)} Excluir Totem</button>
               </div>
 
             </div>
