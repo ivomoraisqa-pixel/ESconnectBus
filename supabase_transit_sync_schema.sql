@@ -198,9 +198,11 @@ INSERT INTO public.routes (route_id, route_short_name, route_long_name, codigo, 
   ('806', '806', 'Jacaraípe / Centro',                  '806', 'Jacaraípe / Centro',             '10B981', 'seed'),
   ('810', '810', 'Jacaraípe / Terminal Laranjeiras',   '810', 'Jacaraípe / T. Laranjeiras',     '6366F1', 'seed'),
   ('814', '814', 'Terminal Laranjeiras / Cascata',      '814', 'T. Laranjeiras / Cascata',       '0EA5E9', 'seed'),
+  ('815', '815', 'Terminal Laranjeiras / Serra Dourada', '815', 'T. Laranjeiras / Serra Dourada', '14B5D6', 'seed'),
   ('850', '850', 'Terminal Laranjeiras / Eldorado',     '850', 'T. Laranjeiras / Eldorado',      'A855F7', 'seed'),
   ('560', '560', 'Shopping Montserrat / Centro',        '560', 'Shopping Montserrat / Centro',   'F43F5E', 'seed')
 ON CONFLICT (route_id) DO NOTHING;
+
 
 -- ============================================
 -- SEED DATA — Relações Estação × Linha (stop_routes)
