@@ -559,7 +559,143 @@ window.TotensController = {
 
     // Fetch and start real-time preview
     this.startTotemPreview(totem);
+
+    // Carrega estações para o seletor
+    this._carregarEstacoesSeletor(totem.id);
   },
+
+  async _carregarEstacoesSeletor(totemId) {
+    const sel = document.getElementById('detalhe-stop-select');
+    if (!sel) return;
+    try {
+      const stops = await window.AppData.getBusStops();
+      const linked = await window.AppData.getTotemPrimaryStop(totemId);
+      const linkedStopId = linked?.stop_id || '';
+
+      sel.innerHTML = '<option value="">Nenhuma estação vinculada</option>';
+      stops.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.code;
+        opt.textContent = s.name;
+        if (s.code === linkedStopId) opt.selected = true;
+        sel.appendChild(opt);
+      });
+
+      if (linkedStopId) {
+        const stop = stops.find(s => s.code === linkedStopId);
+        if (stop) this._exibirInfoEstacao(stop);
+      }
+    } catch (err) {
+      console.warn('[STATION] Erro ao carregar estações:', err.message);
+      sel.innerHTML = '<option value="">Erro ao carregar estações</option>';
+    }
+  },
+
+  _exibirInfoEstacao(stop) {
+    const info = document.getElementById('detalhe-estacao-info');
+    if (!info) return;
+    document.getElementById('detalhe-estacao-endereco').textContent = stop.address || stop.name || '—';
+    document.getElementById('detalhe-estacao-lat').textContent = stop.latitude ? stop.latitude.toFixed(6) : '—';
+    document.getElementById('detalhe-estacao-lng').textContent = stop.longitude ? stop.longitude.toFixed(6) : '—';
+    info.style.display = 'block';
+  },
+
+  onEstacaoChange(stopCode) {
+    if (!stopCode) {
+      const info = document.getElementById('detalhe-estacao-info');
+      if (info) info.style.display = 'none';
+      return;
+    }
+    window.AppData.getBusStopByCode(stopCode).then(stop => {
+      if (stop) this._exibirInfoEstacao(stop);
+    });
+  },
+
+  async sincronizarEstacao() {
+    const stopId  = document.getElementById('detalhe-stop-select')?.value;
+    const totemId = this.currentTotemId;
+    const btn     = document.getElementById('btn-sinc-estacao');
+    const status  = document.getElementById('sinc-status');
+    const linhasSection = document.getElementById('detalhe-linhas-section');
+
+    if (!stopId) {
+      alert('Selecione uma estação antes de sincronizar.');
+      return;
+    }
+
+    const steps = [
+      'Sincronizando...',
+      'Validando estação...',
+      'Buscando linhas...',
+      'Atualizando relação...',
+      'Sincronização concluída ✅'
+    ];
+
+    btn.disabled = true;
+    status.style.display = 'block';
+    status.style.background = '#EFF6FF';
+    status.style.color = '#1D4ED8';
+    status.style.border = '1px solid #BFDBFE';
+
+    for (let i = 0; i < steps.length - 1; i++) {
+      status.textContent = steps[i];
+      await new Promise(r => setTimeout(r, 600));
+    }
+
+    try {
+      // 1. Vincula a estação ao totem
+      if (totemId) {
+        await window.AppData.setTotemStop(totemId, stopId);
+      }
+
+      // 2. Sincroniza via API ou Supabase
+      const result = await window.AppData.syncStationViaAPI(stopId);
+
+      status.textContent = steps[steps.length - 1];
+      status.style.background = '#ECFDF5';
+      status.style.color = '#065F46';
+      status.style.border = '1px solid #A7F3D0';
+
+      // 3. Exibe tabela de linhas
+      if (linhasSection) {
+        linhasSection.style.display = 'block';
+        const tableEl = document.getElementById('detalhe-linhas-table');
+        if (result.lines && result.lines.length > 0) {
+          tableEl.innerHTML = `
+            <table style="width:100%; border-collapse:collapse; font-size:13px;">
+              <thead style="background:#F9FAFB;">
+                <tr>
+                  <th style="padding:8px 12px; text-align:left; color:#6B7280; font-weight:500; border-bottom:1px solid #E5E7EB;">Linha</th>
+                  <th style="padding:8px 12px; text-align:left; color:#6B7280; font-weight:500; border-bottom:1px solid #E5E7EB;">Destino</th>
+                  <th style="padding:8px 12px; text-align:left; color:#6B7280; font-weight:500; border-bottom:1px solid #E5E7EB;">Sentido</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${result.lines.map(l => `
+                  <tr style="border-bottom:1px solid #F3F4F6;">
+                    <td style="padding:8px 12px;"><span style="background:#1F2937; color:white; padding:2px 8px; border-radius:4px; font-weight:700;">${l.line}</span></td>
+                    <td style="padding:8px 12px; font-weight:500;">${l.nome || '—'}</td>
+                    <td style="padding:8px 12px; color:#6B7280;">${l.direction || '—'}</td>
+                  </tr>`).join('')}
+              </tbody>
+            </table>`;
+        } else {
+          tableEl.innerHTML = '<div style="padding:12px; text-align:center; color:#9CA3AF; font-size:13px;">Nenhuma linha cadastrada para esta estação.</div>';
+        }
+      }
+
+    } catch (err) {
+      console.error('[STATION] Erro na sincronização:', err.message);
+      status.textContent = '❌ Erro: ' + err.message;
+      status.style.background = '#FEF2F2';
+      status.style.color = '#991B1B';
+      status.style.border = '1px solid #FECACA';
+    } finally {
+      btn.disabled = false;
+    }
+  },
+
+
 
   async startTotemPreview(totem) {
     if (this.previewInterval) clearInterval(this.previewInterval);
@@ -1139,20 +1275,47 @@ window.TotensController = {
                 </div>
               </div>
 
-              <h4 style="margin-bottom: 12px; color: var(--text-primary); font-size: 15px;">Ações de Gerenciamento</h4>
-              <div class="action-grid">
-                <button class="btn-action" onclick="window.TotensController.fireAction('Reiniciar')">${Components.icon('power', 16)} Reiniciar</button>
-                <button class="btn-action danger" onclick="window.TotensController.fireAction('Desligar')">${Components.icon('power', 16)} Desligar</button>
-                <button class="btn-action" onclick="window.TotensController.fireAction('Atualizar Sistema')">${Components.icon('refresh-cw', 16)} Atualizar Sist.</button>
-                <button class="btn-action" onclick="window.TotensController.fireAction('Atualizar Conteúdo')">${Components.icon('list', 16)} Att. Conteúdo</button>
-                <button class="btn-action" onclick="window.TotensController.fireAction('Sincronizar GTFS')">${Components.icon('bus', 16)} Sinc. Linhas</button>
-                <button class="btn-action" onclick="window.TotensController.fireAction('Sincronizar Horários')">${Components.icon('clock', 16)} Sinc. Horários</button>
-                <button class="btn-action" onclick="window.TotensController.fireAction('Capturar Tela')">${Components.icon('camera', 16)} Capturar Tela</button>
-                <button class="btn-action" onclick="window.TotensController.fireAction('Limpar Cache')">${Components.icon('trash', 16)} Limpar Cache</button>
-                <button class="btn-action warning" onclick="window.TotensController.fireAction('Manutenção')" style="grid-column: span 2;">${Components.icon('tool', 16)} Colocar em Manutenção</button>
-                <div style="grid-column: span 2; height: 1px; background: #E5E7EB; margin: 8px 0;"></div>
-                <button class="btn-action" onclick="window.TotensController.fireAction('Gerar Acesso')" style="color:#2D9B5A; border-color:#2D9B5A;">${Components.icon('link', 16)} Gerar Acesso ao Totem</button>
-                <button class="btn-action danger" onclick="window.TotensController.fireAction('Excluir Totem')">${Components.icon('trash-2', 16)} Excluir Totem</button>
+              </div>
+
+              <!-- ═══════════════════════════════════════════════ -->
+              <!-- ESTAÇÃO VINCULADA AO TOTEM                     -->
+              <!-- ═══════════════════════════════════════════════ -->
+              <h4 style="margin:20px 0 12px; color:var(--text-primary); font-size:15px; display:flex; align-items:center; gap:8px;">
+                ${Components.icon('map-pin', 18)} Estação Vinculada
+              </h4>
+
+              <!-- Seletor de estação -->
+              <div style="margin-bottom:12px;">
+                <label style="font-size:12px; color:#6B7280; display:block; margin-bottom:4px;">Estação Principal</label>
+                <select id="detalhe-stop-select" style="width:100%; padding:8px 10px; border:1px solid #D1D5DB; border-radius:6px; font-size:13px; background:white;" onchange="window.TotensController.onEstacaoChange(this.value)">
+                  <option value="">Carregando estações...</option>
+                </select>
+              </div>
+
+              <!-- Info da estação selecionada -->
+              <div id="detalhe-estacao-info" style="background:#F9FAFB; border:1px solid #E5E7EB; border-radius:8px; padding:12px; margin-bottom:12px; display:none;">
+                <div style="font-size:12px; color:#6B7280;">Endereço</div>
+                <div id="detalhe-estacao-endereco" style="font-size:13px; font-weight:600; color:#111; margin-bottom:6px;">—</div>
+                <div style="display:flex; gap:16px;">
+                  <div><div style="font-size:11px; color:#6B7280;">Latitude</div><div id="detalhe-estacao-lat" style="font-size:13px; font-weight:600;">—</div></div>
+                  <div><div style="font-size:11px; color:#6B7280;">Longitude</div><div id="detalhe-estacao-lng" style="font-size:13px; font-weight:600;">—</div></div>
+                </div>
+              </div>
+
+              <!-- Botão Sincronizar Estação -->
+              <button id="btn-sinc-estacao" onclick="window.TotensController.sincronizarEstacao()" style="width:100%; padding:10px; background:#2D9B5A; color:white; border:none; border-radius:6px; font-size:13px; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:12px;">
+                ${Components.icon('refresh-cw', 16)} SINCRONIZAR ESTAÇÃO
+              </button>
+
+              <!-- Status de sincronização -->
+              <div id="sinc-status" style="display:none; padding:8px 12px; border-radius:6px; font-size:12px; margin-bottom:12px;"></div>
+
+              <!-- Tabela de Linhas desta Estação -->
+              <div id="detalhe-linhas-section" style="display:none;">
+                <h5 style="font-size:13px; font-weight:600; color:#374151; margin-bottom:8px;">Linhas desta Estação</h5>
+                <div id="detalhe-linhas-table" style="border:1px solid #E5E7EB; border-radius:6px; overflow:hidden;">
+                  <div style="padding:12px; text-align:center; color:#9CA3AF; font-size:13px;">Clique em Sincronizar para carregar as linhas.</div>
+                </div>
               </div>
 
             </div>

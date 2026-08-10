@@ -3,118 +3,418 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const supabaseUrl = process.env.SUPABASE_URL || '';
+const supabaseUrl     = process.env.SUPABASE_URL || '';
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || '';
 
-// Se as chaves não estiverem no .env da API, avisar
-const supabase = supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null;
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error('[TRANSIT] ERRO: SUPABASE_URL ou SUPABASE_ANON_KEY não configurados no .env');
+}
 
-// ==========================================
-// SIMULADOR GLOBAL GTFS-RT (ESTADO EM MEMÓRIA)
-// ==========================================
-const globalFleet = [
-  { vehicle_id: 'V-523-01', route_id: '523', line: '523', lat: -20.1200, lng: -40.3000, dir: 'Terminal Laranjeiras', speed: 45 },
-  { vehicle_id: 'V-507-02', route_id: '507', line: '507', lat: -20.1300, lng: -40.3100, dir: 'Centro / Vitória', speed: 50 },
-  { vehicle_id: 'V-814-03', route_id: '814', line: '814', lat: -20.1250, lng: -40.3050, dir: 'Cascata', speed: 38 },
-  { vehicle_id: 'V-850-04', route_id: '850', line: '850', lat: -20.1180, lng: -40.2900, dir: 'Eldorado', speed: 42 },
-  { vehicle_id: 'V-519-05', route_id: '519', line: '519', lat: -20.1400, lng: -40.3200, dir: 'T. Itaparica', speed: 55 },
-  { vehicle_id: 'V-878-06', route_id: '878', line: '878', lat: -20.1220, lng: -40.2950, dir: 'Manguinhos', speed: 40 },
-  { vehicle_id: 'V-832-07', route_id: '832', line: '832', lat: -20.1280, lng: -40.3150, dir: 'Vila Nova', speed: 35 },
-  { vehicle_id: 'V-504-08', route_id: '504', line: '504', lat: -20.1150, lng: -40.3010, dir: 'T. Ibes', speed: 48 }
+const supabase = supabaseUrl && supabaseAnonKey
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : null;
+
+// Modo de dados: 'real' (produção) ou 'mock' (desenvolvimento)
+const TRANSIT_DATA_MODE = process.env.TRANSIT_DATA_MODE || 'real';
+console.log(`[TRANSIT] Modo de dados: ${TRANSIT_DATA_MODE.toUpperCase()}`);
+
+// ============================================================
+// MOCK DATA — usado apenas quando TRANSIT_DATA_MODE=mock
+// ============================================================
+const MOCK_VEHICLES = [
+  { vehicle_id: 'V-501-MOCK', route_id: '501', latitude: -20.2120, longitude: -40.2590, speed_kmh: 42, direction: 'Centro' },
+  { vehicle_id: 'V-507-MOCK', route_id: '507', latitude: -20.2130, longitude: -40.2570, speed_kmh: 50, direction: 'Vitória' },
+  { vehicle_id: 'V-523-MOCK', route_id: '523', latitude: -20.1990, longitude: -40.2460, speed_kmh: 35, direction: 'T. Laranjeiras' }
+];
+const MOCK_ARRIVALS = [
+  { stop_id: 'ST-TL01', route_id: '501', eta_minutes: 4,  distance_km: 1.8, status: 'on_time' },
+  { stop_id: 'ST-TL01', route_id: '507', eta_minutes: 9,  distance_km: 3.5, status: 'delayed' },
+  { stop_id: 'ST-CM03', route_id: '523', eta_minutes: 3,  distance_km: 0.9, status: 'on_time' }
 ];
 
-// Motor de física rudimentar para atualizar posições a cada segundo (Simulando GPS Worker)
-setInterval(() => {
-  globalFleet.forEach(bus => {
-    // Adiciona um ruído randômico na direção para simular o ônibus andando na rua
-    bus.lat += (Math.random() - 0.5) * 0.0005;
-    bus.lng += (Math.random() - 0.5) * 0.0005;
-  });
-}, 2000);
+// ============================================================
+// getGlobalVehicles — Visão global CCO (Mapa Operacional)
+// ============================================================
+export const getGlobalVehicles = async (req, res) => {
+  console.log('[VEHICLE] Requisição de frota global recebida');
 
-export const getGlobalVehicles = (req, res) => {
-  // Retorna a foto atual do mapa de calor do CCO
-  return res.json({
-    timestamp: new Date().toISOString(),
-    total_active: globalFleet.length,
-    vehicles: globalFleet
-  });
-};
+  if (TRANSIT_DATA_MODE === 'mock') {
+    return res.json({
+      timestamp: new Date().toISOString(),
+      mode: 'mock',
+      total_active: MOCK_VEHICLES.length,
+      vehicles: MOCK_VEHICLES
+    });
+  }
 
-// ==========================================
-// CONSULTA TOTEM (API ANTIGA MANTIDA)
-// ==========================================
-export const getTotemTransitData = async (req, res) => {
   try {
-    const { totemId } = req.params;
+    if (!supabase) return res.status(500).json({ error: 'Supabase não configurado' });
 
-    if (!supabase) {
-      return res.status(500).json({ error: 'Supabase credentials not configured in API .env' });
-    }
+    const { data: vehicles, error } = await supabase
+      .from('vehicle_positions')
+      .select('vehicle_id, route_id, latitude, longitude, speed_kmh, bearing, direction, updated_at')
+      .order('updated_at', { ascending: false });
 
-    const { data: totem, error: totemErr } = await supabase
-      .from('totens')
-      .select('*')
-      .eq('id', totemId)
-      .single();
+    if (error) throw error;
 
-    if (totemErr || !totem) {
-      return res.status(404).json({ error: 'Totem not found' });
-    }
-
-    const { data: routes } = await supabase.from('routes').select('*').limit(5);
-
-    const mockVehicles = [
-      {
-        vehicle_id: 'V-1020',
-        route_id: routes && routes.length > 0 ? routes[0].route_id : '507',
-        line: routes && routes.length > 0 ? routes[0].codigo : '507',
-        distance: 1.2, 
-        eta: 3, 
-        status: 'on_time'
-      },
-      {
-        vehicle_id: 'V-1033',
-        route_id: routes && routes.length > 1 ? routes[1].route_id : '523',
-        line: routes && routes.length > 1 ? routes[1].codigo : '523',
-        distance: 2.5,
-        eta: 6,
-        status: 'delayed'
-      }
-    ];
-
-    const responsePayload = {
-      stop: totem.localizacao || 'Unknown Stop',
-      totem_id: totem.id,
-      routes: routes ? routes.map(r => r.codigo || r.route_id) : ['507', '523'],
-      vehicles: mockVehicles,
-      alerts: [],
-      weather: {
-        condition: 'Clear',
-        temp: 28
-      }
-    };
-
-    return res.json(responsePayload);
-  } catch (error) {
-    console.error('Error fetching transit data:', error);
-    return res.status(500).json({ error: 'Internal Server Error' });
+    console.log(`[VEHICLE] ${vehicles?.length || 0} veículos ativos retornados`);
+    return res.json({
+      timestamp: new Date().toISOString(),
+      mode: 'real',
+      total_active: vehicles?.length || 0,
+      vehicles: vehicles || []
+    });
+  } catch (err) {
+    console.error('[VEHICLE] Erro:', err.message);
+    return res.status(500).json({ error: 'Erro ao buscar veículos' });
   }
 };
 
-// ==========================================
-// PAREAMENTO E SYNC WEB (NOVA ARQUITETURA)
-// ==========================================
-export const pairTotem = async (req, res) => {
-  const { pin } = req.body;
-  console.log(`[API] Tentativa de pareamento (Activation Key) recebida. PIN: ${pin}`);
-  
+// ============================================================
+// getStationTransitData — GET /api/transit/stops/:stopId
+// ============================================================
+export const getStationTransitData = async (req, res) => {
+  const { stopId } = req.params;
+  console.log(`[STATION] Requisição para estação: ${stopId}`);
+
+  try {
+    if (!supabase) return res.status(500).json({ error: 'Supabase não configurado' });
+
+    // 1. Busca a estação em bus_stops
+    const { data: station, error: stErr } = await supabase
+      .from('bus_stops')
+      .select('*')
+      .eq('code', stopId)
+      .eq('active', true)
+      .single();
+
+    if (stErr || !station) {
+      console.warn(`[STATION] Estação não encontrada: ${stopId}`);
+      return res.status(404).json({ error: `Estação '${stopId}' não encontrada` });
+    }
+
+    // 2. Busca as linhas vinculadas em stop_routes + routes
+    const { data: stopRoutes, error: srErr } = await supabase
+      .from('stop_routes')
+      .select(`
+        route_id, direction, stop_sequence,
+        routes ( route_id, codigo, nome, route_color, route_short_name, route_long_name )
+      `)
+      .eq('stop_id', stopId)
+      .eq('active', true);
+
+    if (srErr) throw srErr;
+
+    const routeIds = (stopRoutes || []).map(sr => sr.route_id);
+    console.log(`[ROUTE] ${routeIds.length} linhas encontradas para estação ${stopId}: ${routeIds.join(', ')}`);
+
+    // 3. Busca veículos apenas das linhas desta estação
+    let vehicles = [];
+    if (routeIds.length > 0) {
+      const { data: vData, error: vErr } = await supabase
+        .from('vehicle_positions')
+        .select('*')
+        .in('route_id', routeIds);
+      if (!vErr) vehicles = vData || [];
+    }
+    console.log(`[VEHICLE] ${vehicles.length} veículos filtrados para estação ${stopId}`);
+
+    // 4. Busca ETAs apenas para esta estação
+    let arrivals = [];
+    if (routeIds.length > 0) {
+      const { data: aData, error: aErr } = await supabase
+        .from('arrivals')
+        .select('*')
+        .eq('stop_id', stopId)
+        .in('route_id', routeIds)
+        .eq('active', true)
+        .order('eta_minutes', { ascending: true });
+      if (!aErr) arrivals = aData || [];
+    }
+    console.log(`[ETA] ${arrivals.length} previsões de chegada para estação ${stopId}`);
+
+    const lines = (stopRoutes || []).map(sr => {
+      const r = sr.routes || {};
+      const arrival = arrivals.find(a => a.route_id === sr.route_id);
+      return {
+        route_id: sr.route_id,
+        line:     r.codigo || sr.route_id,
+        name:     r.nome || r.route_long_name || '',
+        color:    r.route_color || '3B82F6',
+        direction: sr.direction || '',
+        eta_minutes: arrival?.eta_minutes ?? null,
+        distance_km: arrival?.distance_km ?? null,
+        status:   arrival?.status || 'no_data'
+      };
+    });
+
+    return res.json({
+      timestamp: new Date().toISOString(),
+      mode: TRANSIT_DATA_MODE,
+      station: {
+        id:        station.code,
+        name:      station.name,
+        address:   station.address,
+        lat:       station.latitude,
+        lng:       station.longitude
+      },
+      total_lines: lines.length,
+      lines,
+      vehicles,
+      arrivals
+    });
+
+  } catch (err) {
+    console.error(`[STATION] Erro para ${stopId}:`, err.message);
+    return res.status(500).json({ error: 'Erro interno ao buscar dados da estação' });
+  }
+};
+
+// ============================================================
+// getTotemTransitData — GET /api/v1/transport/totem/:totemId
+//                     & GET /api/transit/totems/:totemId
+// Fluxo: totem → totem_stops → bus_stops → stop_routes → routes → vehicle_positions → arrivals
+// ============================================================
+export const getTotemTransitData = async (req, res) => {
+  const { totemId } = req.params;
+  console.log(`[TOTEM] Requisição de dados de trânsito para totem: ${totemId}`);
+
   if (!supabase) {
     return res.status(500).json({ error: 'Supabase não configurado' });
   }
 
   try {
-    // Busca a chave de ativação no banco
+    // 1. Busca o totem
+    const { data: totem, error: tErr } = await supabase
+      .from('totens')
+      .select('id, nome, localizacao, cidade, lat, lng, status')
+      .eq('id', totemId)
+      .single();
+
+    if (tErr || !totem) {
+      console.warn(`[TOTEM] Totem não encontrado: ${totemId}`);
+      return res.status(404).json({ error: 'Totem não encontrado' });
+    }
+
+    // 2. Busca a estação vinculada via totem_stops
+    const { data: totemStopLink, error: tsErr } = await supabase
+      .from('totem_stops')
+      .select('stop_id, is_primary')
+      .eq('totem_id', totemId)
+      .eq('active', true)
+      .eq('is_primary', true)
+      .single();
+
+    if (tsErr || !totemStopLink) {
+      console.warn(`[TOTEM] Totem ${totemId} não possui estação vinculada`);
+      // Retorna dados do totem sem info de trânsito, mas sem erro crítico
+      return res.json({
+        timestamp:  new Date().toISOString(),
+        mode:       TRANSIT_DATA_MODE,
+        totem_id:   totem.id,
+        totem_name: totem.nome,
+        stop: null,
+        error_transit: 'Totem não possui estação vinculada. Configure em Gerenciar Totens.',
+        lines:    [],
+        vehicles: [],
+        arrivals: []
+      });
+    }
+
+    const stopId = totemStopLink.stop_id;
+    console.log(`[STATION] Estação vinculada ao totem ${totemId}: ${stopId}`);
+
+    // 3. Busca dados da estação
+    const { data: station, error: stErr } = await supabase
+      .from('bus_stops')
+      .select('*')
+      .eq('code', stopId)
+      .single();
+
+    if (stErr || !station) {
+      console.warn(`[STATION] Estação ${stopId} não encontrada em bus_stops`);
+      return res.status(404).json({ error: `Estação '${stopId}' não encontrada em bus_stops` });
+    }
+
+    // 4. Busca linhas da estação via stop_routes
+    const { data: stopRoutes, error: srErr } = await supabase
+      .from('stop_routes')
+      .select(`
+        route_id, direction, stop_sequence,
+        routes ( route_id, codigo, nome, route_color, route_short_name )
+      `)
+      .eq('stop_id', stopId)
+      .eq('active', true);
+
+    if (srErr) throw srErr;
+
+    // FILTRO CRÍTICO — apenas as linhas desta estação
+    const authorizedRouteIds = (stopRoutes || []).map(sr => sr.route_id);
+    console.log(`[ROUTE] ${authorizedRouteIds.length} linhas autorizadas para estação ${stopId}: ${authorizedRouteIds.join(', ')}`);
+
+    if (authorizedRouteIds.length === 0) {
+      return res.json({
+        timestamp:   new Date().toISOString(),
+        mode:        TRANSIT_DATA_MODE,
+        totem_id:    totem.id,
+        totem_name:  totem.nome,
+        stop: { id: station.code, name: station.name, lat: station.latitude, lng: station.longitude },
+        total_lines: 0,
+        lines:    [],
+        vehicles: [],
+        arrivals: [],
+        message:  'Nenhuma linha cadastrada para esta estação.'
+      });
+    }
+
+    // 5. Veículos — filtrados apenas pelas linhas autorizadas da estação
+    let vehicles = [];
+    if (TRANSIT_DATA_MODE === 'mock') {
+      vehicles = MOCK_VEHICLES.filter(v => authorizedRouteIds.includes(v.route_id));
+    } else {
+      const { data: vData, error: vErr } = await supabase
+        .from('vehicle_positions')
+        .select('vehicle_id, route_id, latitude, longitude, speed_kmh, bearing, direction, updated_at')
+        .in('route_id', authorizedRouteIds);
+      if (!vErr) vehicles = vData || [];
+    }
+    console.log(`[VEHICLE] ${vehicles.length} veículos filtrados para totem ${totemId}`);
+
+    // 6. Estimativas de chegada — apenas desta estação × linhas autorizadas
+    let arrivals = [];
+    if (TRANSIT_DATA_MODE === 'mock') {
+      arrivals = MOCK_ARRIVALS.filter(a => a.stop_id === stopId && authorizedRouteIds.includes(a.route_id));
+    } else {
+      const { data: aData, error: aErr } = await supabase
+        .from('arrivals')
+        .select('stop_id, route_id, vehicle_id, eta_minutes, distance_km, status, updated_at')
+        .eq('stop_id', stopId)
+        .in('route_id', authorizedRouteIds)
+        .eq('active', true)
+        .order('eta_minutes', { ascending: true });
+      if (!aErr) arrivals = aData || [];
+    }
+    console.log(`[ETA] ${arrivals.length} previsões de chegada para totem ${totemId}`);
+
+    // 7. Monta a lista de linhas enriquecida com ETA
+    const lines = (stopRoutes || []).map(sr => {
+      const r = sr.routes || {};
+      const arrival = arrivals.find(a => a.route_id === sr.route_id);
+      return {
+        route_id:    sr.route_id,
+        line:        r.codigo || r.route_short_name || sr.route_id,
+        name:        r.nome || '',
+        color:       r.route_color || '3B82F6',
+        direction:   sr.direction || '',
+        eta_minutes: arrival?.eta_minutes ?? null,
+        distance_km: arrival?.distance_km ?? null,
+        status:      arrival?.status || 'no_data',
+        vehicle_id:  arrival?.vehicle_id || null
+      };
+    }).sort((a, b) => {
+      // Ordena: com ETA primeiro (menor primeiro), sem ETA por último
+      if (a.eta_minutes === null && b.eta_minutes === null) return 0;
+      if (a.eta_minutes === null) return 1;
+      if (b.eta_minutes === null) return -1;
+      return a.eta_minutes - b.eta_minutes;
+    });
+
+    console.log(`[TOTEM] Payload montado para totem ${totemId} com ${lines.length} linhas e ${vehicles.length} veículos`);
+
+    return res.json({
+      timestamp:   new Date().toISOString(),
+      mode:        TRANSIT_DATA_MODE,
+      totem_id:    totem.id,
+      totem_name:  totem.nome,
+      stop: {
+        id:       station.code,
+        name:     station.name,
+        address:  station.address,
+        lat:      station.latitude,
+        lng:      station.longitude
+      },
+      total_lines: lines.length,
+      lines,
+      vehicles,
+      arrivals
+    });
+
+  } catch (err) {
+    console.error(`[TOTEM] Erro para totem ${totemId}:`, err.message);
+    return res.status(500).json({ error: 'Erro interno ao buscar dados do totem' });
+  }
+};
+
+// ============================================================
+// syncStation — POST /api/transit/sync-station/:stopId
+// ============================================================
+export const syncStation = async (req, res) => {
+  const { stopId } = req.params;
+  console.log(`[STATION] Sincronização solicitada para estação: ${stopId}`);
+
+  if (!supabase) return res.status(500).json({ error: 'Supabase não configurado' });
+
+  try {
+    // 1. Valida a estação
+    const { data: station, error: stErr } = await supabase
+      .from('bus_stops')
+      .select('*')
+      .eq('code', stopId)
+      .single();
+
+    if (stErr || !station) {
+      return res.status(404).json({ success: false, error: `Estação '${stopId}' não encontrada` });
+    }
+    console.log(`[STATION] Validando: ${station.name}`);
+
+    // 2. Busca relações em stop_routes
+    const { data: stopRoutes, error: srErr } = await supabase
+      .from('stop_routes')
+      .select('route_id, direction, routes(codigo, nome)')
+      .eq('stop_id', stopId)
+      .eq('active', true);
+
+    if (srErr) throw srErr;
+
+    const lines = (stopRoutes || []).map(sr => ({
+      route_id:  sr.route_id,
+      line:      sr.routes?.codigo || sr.route_id,
+      nome:      sr.routes?.nome || '',
+      direction: sr.direction || ''
+    }));
+
+    console.log(`[ROUTE] ${lines.length} linhas sincronizadas para estação ${stopId}: ${lines.map(l => l.line).join(', ')}`);
+
+    return res.json({
+      success: true,
+      station: {
+        id:      station.code,
+        name:    station.name,
+        address: station.address,
+        lat:     station.latitude,
+        lng:     station.longitude
+      },
+      total_lines: lines.length,
+      lines,
+      synced_at: new Date().toISOString()
+    });
+
+  } catch (err) {
+    console.error(`[STATION] Erro na sincronização de ${stopId}:`, err.message);
+    return res.status(500).json({ success: false, error: 'Erro interno na sincronização' });
+  }
+};
+
+// ============================================================
+// pairTotem — POST /api/v1/transport/totem/pair
+// ============================================================
+export const pairTotem = async (req, res) => {
+  const { pin } = req.body;
+  console.log(`[API] Tentativa de pareamento (Activation Key). PIN: ${pin}`);
+
+  if (!supabase) return res.status(500).json({ error: 'Supabase não configurado' });
+
+  try {
     const { data: keyData, error: keyErr } = await supabase
       .from('activation_keys')
       .select('*, totens(*)')
@@ -123,128 +423,159 @@ export const pairTotem = async (req, res) => {
       .single();
 
     if (keyErr || !keyData) {
-      console.error(`[API] PIN inválido, expirado ou já utilizado:`, pin);
+      console.error('[API] PIN inválido, expirado ou já utilizado:', pin);
       return res.status(404).json({ error: 'PIN inválido ou já utilizado' });
     }
 
     const totem = keyData.totens;
-    if (!totem) {
-      return res.status(404).json({ error: 'Totem não associado a esta chave de ativação' });
-    }
+    if (!totem) return res.status(404).json({ error: 'Totem não associado a esta chave' });
 
     console.log(`[API] Totem encontrado via MDM: ${totem.nome}. Registrando...`);
-    
-    // Marca a chave como utilizada e atualiza o totem com o token seguro
     await supabase.from('activation_keys').update({ utilizado: true }).eq('id', keyData.id);
     await supabase.from('totens').update({ status: 'online', ultima_conexao: new Date().toISOString(), token: keyData.token }).eq('id', totem.id);
 
-    // Payload de provisionamento (Bootstrap)
     return res.json({
-      totemId: totem.id,
-      token: keyData.token, // Token persistente de auth (Device Token)
-      cidade: totem.cidade || 'Serra',
-      nome: totem.nome,
+      totemId:    totem.id,
+      token:      keyData.token,
+      cidade:     totem.cidade || 'Serra',
+      nome:       totem.nome,
       themeColor: '#2D9B5A',
-      status: 'active'
+      status:     'active'
     });
-  } catch(err) {
-    console.error(`[API] Erro interno:`, err);
+  } catch (err) {
+    console.error('[API] Erro interno:', err.message);
     return res.status(500).json({ error: 'Erro interno' });
   }
 };
 
+// ============================================================
+// syncTotem — GET /api/v1/transport/totem/:totemId/sync
+// ============================================================
 export const syncTotem = async (req, res) => {
   const { totemId } = req.params;
-  const token = req.headers['authorization']?.replace('Bearer ', '');
-  
-  if (!supabase) {
-    return res.status(500).json({ error: 'Supabase não configurado' });
-  }
+
+  if (!supabase) return res.status(500).json({ error: 'Supabase não configurado' });
 
   try {
-    // Opcional em prod: Validar se `token` bate com `totens.token`
-    // 1. Atualiza ultima_conexao do totem (Heartbeat)
     await supabase.from('totens').update({ ultima_conexao: new Date().toISOString(), status: 'online' }).eq('id', totemId);
 
-    // 2. Busca Comandos Remotos pendentes (Remote Commands Queue)
     const { data: commands } = await supabase
       .from('totem_commands')
       .select('*')
       .eq('totem_id', totemId)
       .eq('status', 'pending');
-      
+
     if (commands && commands.length > 0) {
-      for(let cmd of commands) {
+      for (const cmd of commands) {
         await supabase.from('totem_commands').update({ status: 'completed', executed_at: new Date().toISOString() }).eq('id', cmd.id);
       }
     }
 
-    // 3. Busca Configurações do Totem (Tema, Fullscreen, Layout)
     const { data: config } = await supabase.from('totem_config').select('*').eq('totem_id', totemId).single();
 
-    // 4. Busca Campanhas via Relacionamento N:N (Módulo Novo de Segmentação)
+    const { data: campanhasGlobais } = await supabase.from('campanhas').select('*').eq('status', 'ativa');
+    const campanhasAlvo = (campanhasGlobais || []).filter(c => c.totens_alvo?.tipo === 'todos');
+
     const { data: totemCampaigns } = await supabase
       .from('totem_campaigns')
       .select('*, campanhas(*)')
       .eq('totem_id', totemId)
       .eq('ativo', true);
-      
-    // Também busca campanhas globais que tenham totens_alvo tipo 'todos' (Fallback MVP)
-    const { data: campanhasGlobais } = await supabase.from('campanhas').select('*').eq('status', 'ativa');
-    const campanhasAlvo = campanhasGlobais ? campanhasGlobais.filter(c => c.totens_alvo && c.totens_alvo.tipo === 'todos') : [];
-    
-    // Mescla campanhas específicas do N:N com as globais
+
     let todasAsCampanhas = [];
-    if (totemCampaigns) totemCampaigns.forEach(tc => { if(tc.campanhas) todasAsCampanhas.push(tc.campanhas) });
+    if (totemCampaigns) totemCampaigns.forEach(tc => { if (tc.campanhas) todasAsCampanhas.push(tc.campanhas); });
     campanhasAlvo.forEach(c => {
-      if(!todasAsCampanhas.find(tc => tc.id === c.id)) todasAsCampanhas.push(c);
+      if (!todasAsCampanhas.find(tc => tc.id === c.id)) todasAsCampanhas.push(c);
     });
 
     let announcements = [];
     let activeCampaign = null;
-    
     if (todasAsCampanhas.length > 0) {
-      const c = todasAsCampanhas[0]; // Pega a primeira ativa
-      announcements.push({
-        id: c.id,
-        text: c.nome + ' - ' + (c.descricao || 'Informação da Central')
-      });
-      activeCampaign = {
-        title: c.nome,
-        mediaUrl: 'https://images.unsplash.com/photo-1542314831-c6a420325142?auto=format&fit=crop&q=80&w=1080',
-        type: 'image'
-      };
+      const c = todasAsCampanhas[0];
+      announcements.push({ id: c.id, text: c.nome + ' - ' + (c.descricao || '') });
+      activeCampaign = { title: c.nome, mediaUrl: null, type: c.formato || 'image' };
     } else {
       announcements.push({ id: 99, text: 'Prefeitura da Serra - Cidade Inteligente' });
-      activeCampaign = {
-        title: 'Cidade Inteligente',
-        mediaUrl: 'https://images.unsplash.com/photo-1542314831-c6a420325142?auto=format&fit=crop&q=80&w=1080',
-        type: 'image'
-      };
+      activeCampaign = { title: 'Cidade Inteligente', mediaUrl: null, type: 'image' };
     }
 
-    // 5. Busca horários (GTFS Simulados)
-    const mockVehicles = [
-       { vehicle_id: 'V-RT-01', line: '507', distance: parseFloat((Math.random() * 2 + 0.5).toFixed(1)), eta: Math.floor(Math.random() * 5 + 2) },
-       { vehicle_id: 'V-RT-02', line: '523', distance: parseFloat((Math.random() * 3 + 1).toFixed(1)), eta: Math.floor(Math.random() * 8 + 4) },
-       { vehicle_id: 'V-RT-03', line: '851', distance: parseFloat((Math.random() * 4 + 2).toFixed(1)), eta: Math.floor(Math.random() * 10 + 6) }
-    ];
+    // Busca dados de trânsito reais via getTotemTransitData inline
+    let transitData = { lines: [], vehicles: [], arrivals: [], stop: null };
+    try {
+      const { data: totemStopLink } = await supabase
+        .from('totem_stops')
+        .select('stop_id')
+        .eq('totem_id', totemId)
+        .eq('active', true)
+        .eq('is_primary', true)
+        .single();
 
-    // Payload Resposta Final
+      if (totemStopLink) {
+        const stopId = totemStopLink.stop_id;
+        const { data: stopRoutes } = await supabase
+          .from('stop_routes')
+          .select('route_id, direction, routes(codigo, nome, route_color)')
+          .eq('stop_id', stopId)
+          .eq('active', true);
+
+        const routeIds = (stopRoutes || []).map(sr => sr.route_id);
+        let vehicles = [], arrivals = [];
+
+        if (TRANSIT_DATA_MODE === 'mock') {
+          vehicles = MOCK_VEHICLES.filter(v => routeIds.includes(v.route_id));
+          arrivals = MOCK_ARRIVALS.filter(a => a.stop_id === stopId && routeIds.includes(a.route_id));
+        } else {
+          if (routeIds.length > 0) {
+            const { data: vd } = await supabase.from('vehicle_positions').select('*').in('route_id', routeIds);
+            vehicles = vd || [];
+            const { data: ad } = await supabase.from('arrivals').select('*').eq('stop_id', stopId).in('route_id', routeIds).eq('active', true).order('eta_minutes');
+            arrivals = ad || [];
+          }
+        }
+
+        const { data: st } = await supabase.from('bus_stops').select('*').eq('code', stopId).single();
+        transitData = {
+          stop: st ? { id: st.code, name: st.name, lat: st.latitude, lng: st.longitude } : null,
+          lines: (stopRoutes || []).map(sr => {
+            const r = sr.routes || {};
+            const arrival = arrivals.find(a => a.route_id === sr.route_id);
+            return {
+              route_id:    sr.route_id,
+              line:        r.codigo || sr.route_id,
+              name:        r.nome || '',
+              color:       r.route_color || '3B82F6',
+              direction:   sr.direction || '',
+              eta_minutes: arrival?.eta_minutes ?? null,
+              distance_km: arrival?.distance_km ?? null,
+              status:      arrival?.status || 'no_data'
+            };
+          }).sort((a, b) => (a.eta_minutes ?? 999) - (b.eta_minutes ?? 999)),
+          vehicles,
+          arrivals
+        };
+
+        console.log(`[TOTEM] Sync ${totemId}: ${transitData.lines.length} linhas, ${transitData.vehicles.length} veículos`);
+      }
+    } catch (te) {
+      console.warn('[TOTEM] Aviso ao buscar trânsito no sync:', te.message);
+    }
+
     return res.json({
-      timestamp: new Date().toISOString(),
+      timestamp:   new Date().toISOString(),
       totemId,
-      commands: commands || [], // Totem Client lerá este array de comandos e executará!
+      mode:        TRANSIT_DATA_MODE,
+      commands:    commands || [],
       configSync: {
-        themeColor: config ? (config.tema === 'escuro' ? '#1A1A2E' : '#FFFFFF') : '#2D9B5A',
-        config: config || {},
+        themeColor:    config ? (config.tema === 'escuro' ? '#1A1A2E' : '#FFFFFF') : '#2D9B5A',
+        config:        config || {},
         announcements,
-        campaign: activeCampaign
+        campaign:      activeCampaign
       },
-      vehicles: mockVehicles
+      transit: transitData
     });
-  } catch(err) {
-    console.error(`[API] Erro interno na sincronização:`, err);
+
+  } catch (err) {
+    console.error('[API] Erro interno na sincronização:', err.message);
     return res.status(500).json({ error: 'Erro interno na sincronização' });
   }
 };

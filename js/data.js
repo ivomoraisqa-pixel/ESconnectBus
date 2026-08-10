@@ -248,5 +248,146 @@ window.AppData = {
       retornoEstimado: 'R$ 45.230,00',
       roi: '2,44x'
     };
+  },
+
+  // ═══════════════════════════════════════════════════
+  // TRÂNSITO — Estação × Linhas × GPS × ETA
+  // ═══════════════════════════════════════════════════
+
+  /** Lista todas as estações (bus_stops) */
+  async getBusStops() {
+    const { data, error } = await window.supabase.from('bus_stops').select('*').eq('active', true).order('name');
+    if (error) { console.error('[STATION] Erro ao buscar estações:', error); return []; }
+    return data || [];
+  },
+
+  /** Busca uma estação pelo code */
+  async getBusStopByCode(code) {
+    const { data, error } = await window.supabase.from('bus_stops').select('*').eq('code', code).single();
+    if (error) return null;
+    return data;
+  },
+
+  /** Retorna as linhas vinculadas a uma estação via stop_routes */
+  async getRoutesByStop(stopId) {
+    const { data, error } = await window.supabase
+      .from('stop_routes')
+      .select('route_id, direction, stop_sequence, routes(route_id, codigo, nome, route_color, route_short_name)')
+      .eq('stop_id', stopId)
+      .eq('active', true);
+    if (error) { console.error('[ROUTE] Erro ao buscar linhas da estação:', error); return []; }
+    return data || [];
+  },
+
+  /** Busca a estação principal vinculada a um totem */
+  async getTotemPrimaryStop(totemId) {
+    const { data, error } = await window.supabase
+      .from('totem_stops')
+      .select('stop_id, is_primary, bus_stops(code, name, address, latitude, longitude)')
+      .eq('totem_id', totemId)
+      .eq('is_primary', true)
+      .eq('active', true)
+      .single();
+    if (error) return null;
+    return data;
+  },
+
+  /** Vincula (ou atualiza) uma estação a um totem */
+  async setTotemStop(totemId, stopCode) {
+    // Remove vínculos primários anteriores
+    await window.supabase.from('totem_stops').update({ active: false }).eq('totem_id', totemId).eq('is_primary', true);
+    // Cria novo vínculo
+    const { data, error } = await window.supabase
+      .from('totem_stops')
+      .upsert([{ totem_id: totemId, stop_id: stopCode, is_primary: true, active: true }], { onConflict: 'totem_id,stop_id' })
+      .select();
+    if (error) throw error;
+    return data;
+  },
+
+  /** Busca chegadas (arrivals) para uma estação */
+  async getArrivalsByStop(stopId) {
+    const { data, error } = await window.supabase
+      .from('arrivals')
+      .select('*')
+      .eq('stop_id', stopId)
+      .eq('active', true)
+      .order('eta_minutes', { ascending: true });
+    if (error) { console.error('[ETA] Erro ao buscar ETAs:', error); return []; }
+    return data || [];
+  },
+
+  /** Busca veículos de um conjunto de route_ids */
+  async getVehiclesByRoutes(routeIds) {
+    if (!routeIds || routeIds.length === 0) return [];
+    const { data, error } = await window.supabase
+      .from('vehicle_positions')
+      .select('*')
+      .in('route_id', routeIds);
+    if (error) { console.error('[VEHICLE] Erro ao buscar veículos:', error); return []; }
+    return data || [];
+  },
+
+  /** Sincroniza uma estação via API backend */
+  async syncStationViaAPI(stopId) {
+    const API_BASE = 'http://localhost:3000';
+    try {
+      const resp = await fetch(`${API_BASE}/api/transit/sync-station/${stopId}`, { method: 'POST' });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      return await resp.json();
+    } catch (err) {
+      console.error('[STATION] Erro ao sincronizar via API:', err.message);
+      // Fallback: sincroniza direto via Supabase
+      const station = await this.getBusStopByCode(stopId);
+      if (!station) throw new Error(`Estação '${stopId}' não encontrada`);
+      const routes = await this.getRoutesByStop(stopId);
+      return {
+        success: true,
+        station: { id: station.code, name: station.name, lat: station.latitude, lng: station.longitude },
+        total_lines: routes.length,
+        lines: routes.map(r => ({ route_id: r.route_id, line: r.routes?.codigo || r.route_id, nome: r.routes?.nome || '', direction: r.direction || '' })),
+        synced_at: new Date().toISOString(),
+        source: 'supabase_fallback'
+      };
+    }
+  },
+
+  /** Busca dados completos de trânsito do totem via API ou direto no Supabase */
+  async getTotemTransitData(totemId) {
+    const API_BASE = 'http://localhost:3000';
+    try {
+      const resp = await fetch(`${API_BASE}/api/v1/transport/totem/${totemId}`);
+      if (resp.ok) return await resp.json();
+    } catch (_) { /* API offline — usa fallback Supabase */ }
+    // Fallback via Supabase direto
+    const link = await this.getTotemPrimaryStop(totemId);
+    if (!link) return { stop: null, lines: [], vehicles: [], arrivals: [], error_transit: 'Totem sem estação vinculada' };
+    const stopId = link.stop_id;
+    const stopRoutes = await this.getRoutesByStop(stopId);
+    const routeIds = stopRoutes.map(sr => sr.route_id);
+    const [vehicles, arrivals] = await Promise.all([
+      this.getVehiclesByRoutes(routeIds),
+      this.getArrivalsByStop(stopId)
+    ]);
+    return {
+      stop: link.bus_stops || { id: stopId },
+      lines: stopRoutes.map(sr => {
+        const r = sr.routes || {};
+        const arrival = arrivals.find(a => a.route_id === sr.route_id);
+        return {
+          route_id:    sr.route_id,
+          line:        r.codigo || sr.route_id,
+          name:        r.nome || '',
+          color:       r.route_color || '3B82F6',
+          direction:   sr.direction || '',
+          eta_minutes: arrival?.eta_minutes ?? null,
+          distance_km: arrival?.distance_km ?? null,
+          status:      arrival?.status || 'no_data'
+        };
+      }).sort((a, b) => (a.eta_minutes ?? 999) - (b.eta_minutes ?? 999)),
+      vehicles,
+      arrivals
+    };
   }
 };
+
