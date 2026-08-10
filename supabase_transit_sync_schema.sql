@@ -42,6 +42,15 @@ CREATE TABLE IF NOT EXISTS public.routes (
   updated_at       TIMESTAMPTZ DEFAULT now()
 );
 
+-- Garante que se a tabela routes já existia, as novas colunas sejam adicionadas com segurança
+ALTER TABLE public.routes ADD COLUMN IF NOT EXISTS route_short_name TEXT;
+ALTER TABLE public.routes ADD COLUMN IF NOT EXISTS route_long_name TEXT;
+ALTER TABLE public.routes ADD COLUMN IF NOT EXISTS route_color TEXT DEFAULT '3B82F6';
+ALTER TABLE public.routes ADD COLUMN IF NOT EXISTS active BOOLEAN DEFAULT true;
+ALTER TABLE public.routes ADD COLUMN IF NOT EXISTS source TEXT DEFAULT 'manual';
+ALTER TABLE public.routes ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now();
+
+
 -- ============================================
 -- 3. stop_routes — Relação Estação × Linha
 -- ============================================
