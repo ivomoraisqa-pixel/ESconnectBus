@@ -205,24 +205,9 @@ export const getTotemTransitData = async (req, res) => {
       .eq('is_primary', true)
       .single();
 
-    if (tsErr || !totemStopLink) {
-      console.warn(`[TOTEM] Totem ${totemId} não possui estação vinculada`);
-      // Retorna dados do totem sem info de trânsito, mas sem erro crítico
-      return res.json({
-        timestamp:  new Date().toISOString(),
-        mode:       TRANSIT_DATA_MODE,
-        totem_id:   totem.id,
-        totem_name: totem.nome,
-        stop: null,
-        error_transit: 'Totem não possui estação vinculada. Configure em Gerenciar Totens.',
-        lines:    [],
-        vehicles: [],
-        arrivals: []
-      });
-    }
+    const stopId = totemStopLink?.stop_id || 'ST-TL01';
+    console.log(`[STATION] Estação para totem ${totemId}: ${stopId}${!totemStopLink ? ' (fallback padrão)' : ''}`);
 
-    const stopId = totemStopLink.stop_id;
-    console.log(`[STATION] Estação vinculada ao totem ${totemId}: ${stopId}`);
 
     // 3. Busca dados da estação
     const { data: station, error: stErr } = await supabase
@@ -510,13 +495,14 @@ export const syncTotem = async (req, res) => {
         .eq('is_primary', true)
         .single();
 
-      if (totemStopLink) {
-        const stopId = totemStopLink.stop_id;
+      const stopId = totemStopLink?.stop_id || 'ST-TL01';
+      {
         const { data: stopRoutes } = await supabase
           .from('stop_routes')
           .select('route_id, direction, routes(codigo, nome, route_color)')
           .eq('stop_id', stopId)
           .eq('active', true);
+
 
         const routeIds = (stopRoutes || []).map(sr => sr.route_id);
         let vehicles = [], arrivals = [];
