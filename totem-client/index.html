@@ -142,8 +142,8 @@
 
     let vehicleMarkers = {};
 
-    const busIconHtml = (line) => `
-      <div style="background: #3B82F6; color: white; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; border: 2px solid white; box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);">
+    const busIconHtml = (line, color) => `
+      <div style="background: #${color || '3B82F6'}; color: white; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; border: 2px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.5);">
         ${line}
       </div>
     `;
@@ -164,7 +164,7 @@
         API_URL = `http://localhost:3000/api/v1/transport/totem/${config.totemId}/sync`;
         
         document.getElementById('config-cidade').textContent = (config.cidade || "SERRA").toUpperCase();
-        document.getElementById('config-local').textContent = "Ponto: " + config.nome;
+        document.getElementById('config-local').textContent = config.nome;
 
         // Injeta cores do tema vindos da Central
         if(config.themeColor) {
@@ -179,41 +179,42 @@
         fetchTransitData();
         setInterval(fetchTransitData, 5000);
 
-        // Força CSS Kiosk: a lógica de giro e proporção agora vive puramente no totem.css
-        // para garantir suporte perfeito a monitores horizontais simulando verticais.
-
       } catch(err) {
         console.error("Erro ao iniciar totem client", err);
       }
     }
+
     async function fetchTransitData() {
       let data = null;
       try {
-        if(API_URL) {
+        if (API_URL) {
           const res = await fetch(API_URL);
-          if(res.ok) {
+          if (res.ok) {
             data = await res.json();
           }
         }
       } catch (err) {
-        console.warn("API indisponível. Ativando Modo Offline (Fallback)...");
+        console.warn("API indisponível. Conectando ao servidor...");
       }
 
-      // Fallback robusto caso a API Node esteja desligada ou o Sync falhe
-      if (!data || !data.vehicles) {
-        data = {
-          vehicles: [
-            { vehicle_id: 'V-MOCK1', line: '507', distance: 1.2, eta: 3 },
-            { vehicle_id: 'V-MOCK2', line: '523', distance: 2.5, eta: 6 },
-            { vehicle_id: 'V-MOCK3', line: '851', distance: 4.1, eta: 12 }
-          ],
-          configSync: {
-            announcements: [{ id: 1, text: 'Serra Cidade Inteligente' }],
-            campaign: { title: 'Campanha Padrão', mediaUrl: 'https://images.unsplash.com/photo-1542314831-c6a420325142?auto=format&fit=crop&q=80&w=1080', type: 'image' }
-          }
-        };
-      }
+      if (!data) return;
+
+      const transit = data.transit || data;
+      const lines = transit.lines || [];
+      const vehicles = transit.vehicles || [];
+      const stop = transit.stop || null;
       
+      // ---------------------------------------------------------
+      // ATUALIZA NOME E POSIÇÃO DA ESTAÇÃO NO MAPA
+      // ---------------------------------------------------------
+      if (stop && stop.name) {
+        document.getElementById('config-local').textContent = stop.name;
+        if (stop.lat && stop.lng) {
+          map.setView([stop.lat, stop.lng], 14);
+          mapMarker.setLatLng([stop.lat, stop.lng]);
+        }
+      }
+
       // ---------------------------------------------------------
       // PROCESSAMENTO DE COMANDOS REMOTOS (MDM)
       // ---------------------------------------------------------
@@ -221,10 +222,7 @@
         data.commands.forEach(cmd => {
           console.log("Comando Remoto Recebido:", cmd.comando);
           if (cmd.comando === 'REBOOT' || cmd.comando === 'UPDATE' || cmd.comando === 'RELOAD' || cmd.comando === 'CLEAR_CACHE') {
-            // Em ambiente kiosk web, a forma de reiniciar a interface é via reload total
-            setTimeout(() => {
-              window.location.reload(true);
-            }, 1000);
+            setTimeout(() => { window.location.reload(true); }, 1000);
           } else if (cmd.comando === 'MAINTENANCE_MODE' || cmd.comando === 'SHUTDOWN') {
             document.body.innerHTML = `
               <div style="background:#1A1A2E; width:100vw; height:100vh; display:flex; align-items:center; justify-content:center; flex-direction:column; color:white; font-family:Inter, sans-serif;">
@@ -236,9 +234,10 @@
           }
         });
       }
-      // ---------------------------------------------------------
       
-      // Atualiza Informativos na barra (Footer Info Bar)
+      // ---------------------------------------------------------
+      // INFORMATIVOS NA BARRA INFERIOR
+      // ---------------------------------------------------------
       if (data.configSync && data.configSync.announcements && data.configSync.announcements.length > 0) {
         const infoBar = document.querySelector('.totem-info-bar');
         const infosHTML = data.configSync.announcements.map(ann => `
@@ -256,19 +255,30 @@
         `;
       }
 
-      // Renderiza Anúncios/Propaganda Dinâmica (Alternando com o Mapa se houver)
+      // ---------------------------------------------------------
+      // PROPAGANDAS / PUBLICIDADE DINÂMICA
+      // ---------------------------------------------------------
       if (data.configSync && data.configSync.campaign) {
+        const campaign = data.configSync.campaign;
         const adContainer = document.getElementById('ad-container-overlay');
+        const mediaUrl = campaign.mediaUrl || '';
+
         if (!adContainer) {
+          const adContent = mediaUrl
+            ? `<img id="ad-media-element" src="${mediaUrl}" style="width: 100%; height: 100%; object-fit: cover;" />`
+            : `<div id="ad-media-element" style="width:100%; height:100%; background:linear-gradient(135deg, #1E3A8A, #3B82F6); display:flex; flex-direction:column; align-items:center; justify-content:center; color:white;">
+                 <div style="font-size:48px; margin-bottom:12px;">🚌</div>
+                 <div style="font-size:28px; font-weight:800;" id="ad-title-element">${campaign.title}</div>
+                 <div style="font-size:16px; margin-top:8px; opacity:0.8;">Prefeitura da Serra</div>
+               </div>`;
+
           const adHtml = `
             <div id="ad-container-overlay" style="position: absolute; inset: 0; background: black; display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; transition: opacity 1s; pointer-events: none;">
-              <img id="ad-media-element" src="${data.configSync.campaign.mediaUrl}" style="width: 100%; height: 100%; object-fit: cover;" />
-              <div style="position: absolute; bottom: 20px; right: 20px; background: rgba(0,0,0,0.6); color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px;" id="ad-title-element">${data.configSync.campaign.title}</div>
+              ${adContent}
             </div>
           `;
           document.querySelector('.totem-map').insertAdjacentHTML('beforeend', adHtml);
           
-          // Alternância entre Mapa e Propaganda a cada 10 segundos (Protegido contra vazamento de memória)
           if (!window.adInterval) {
             window.adInterval = setInterval(() => {
               const overlay = document.getElementById('ad-container-overlay');
@@ -277,49 +287,72 @@
               }
             }, 10000);
           }
-        } else {
-          document.getElementById('ad-media-element').src = data.configSync.campaign.mediaUrl;
-          document.getElementById('ad-title-element').textContent = data.configSync.campaign.title;
         }
       }
       
-      busListEl.innerHTML = ''; 
+      // ---------------------------------------------------------
+      // RENDERIZA LISTA DE PRÓXIMOS ÔNIBUS (LINHAS DA ESTAÇÃO)
+      // ---------------------------------------------------------
+      busListEl.innerHTML = '';
 
-      data.vehicles.forEach(v => {
-        busListEl.innerHTML += `
-          <div class="bus-item">
-            <div class="bus-number c-${v.line}" style="background-color: #3B82F6;">${v.line}</div>
-            <div class="bus-destination">Terminal Laranjeiras</div>
-            <div class="bus-meta">
-              <div class="bus-time">${v.eta.toString().padStart(2, '0')} MIN</div>
-              <div class="bus-distance">${v.distance}km</div>
+      if (lines.length === 0) {
+        busListEl.innerHTML = `
+          <div style="padding:24px; text-align:center; color:rgba(255,255,255,0.6); font-size:15px;">
+            Nenhuma linha cadastrada para esta estação.
+          </div>`;
+      } else {
+        lines.forEach(l => {
+          const etaLabel  = l.eta_minutes !== null ? `${l.eta_minutes.toString().padStart(2,'0')} MIN` : 'SEM PREVISÃO';
+          const distLabel = l.distance_km !== null ? `${l.distance_km.toFixed(1)}km` : '';
+          const bgColor   = '#' + (l.color || '3B82F6').replace('#','');
+
+          busListEl.innerHTML += `
+            <div class="bus-item">
+              <div class="bus-number" style="background-color: ${bgColor};">${l.line}</div>
+              <div class="bus-destination">${l.name || l.direction || 'Destino'}</div>
+              <div class="bus-meta">
+                <div class="bus-time">${etaLabel}</div>
+                ${distLabel ? `<div class="bus-distance">${distLabel}</div>` : ''}
+              </div>
             </div>
-          </div>
-        `;
+          `;
+        });
+      }
 
-        // Posição com ruído maior para simular movimento nítido (caminhando)
-        // Se a API mandasse coordenadas reais, usaríamos v.lat e v.lng
-        if(!vehicleMarkers[v.vehicle_id]) {
-           // Começa perto do terminal
-           vehicleMarkers[v.vehicle_id] = { lat: -20.2108 + (Math.random() - 0.5) * 0.015, lng: -40.2573 + (Math.random() - 0.5) * 0.015 };
-           
-           const icon = L.divIcon({
+      // ---------------------------------------------------------
+      // MARCADORES DE ÔNIBUS NO MAPA (GPS REAL FILTRADO)
+      // ---------------------------------------------------------
+      const activeIds = new Set(vehicles.map(v => v.vehicle_id));
+      Object.keys(vehicleMarkers).forEach(vid => {
+        if (!activeIds.has(vid)) {
+          map.removeLayer(vehicleMarkers[vid].marker);
+          delete vehicleMarkers[vid];
+        }
+      });
+
+      vehicles.forEach(v => {
+        if (!v.latitude || !v.longitude) return;
+        const line  = lines.find(l => l.route_id === v.route_id);
+        const color = line?.color || '3B82F6';
+        const label = line?.line || v.route_id;
+
+        if (vehicleMarkers[v.vehicle_id]) {
+          vehicleMarkers[v.vehicle_id].marker.setLatLng([v.latitude, v.longitude]);
+        } else {
+          const icon = L.divIcon({
             className: 'moving-bus-marker',
-            html: busIconHtml(v.line),
+            html: busIconHtml(label, color.replace('#','')),
             iconSize: [40, 40],
             iconAnchor: [20, 20]
           });
-          vehicleMarkers[v.vehicle_id].marker = L.marker([vehicleMarkers[v.vehicle_id].lat, vehicleMarkers[v.vehicle_id].lng], {icon}).addTo(map);
-        } else {
-          // Incrementa a posição para "andar" na tela
-          vehicleMarkers[v.vehicle_id].lat += (Math.random() - 0.5) * 0.001;
-          vehicleMarkers[v.vehicle_id].lng += (Math.random() - 0.5) * 0.001;
-          vehicleMarkers[v.vehicle_id].marker.setLatLng([vehicleMarkers[v.vehicle_id].lat, vehicleMarkers[v.vehicle_id].lng]); 
+          vehicleMarkers[v.vehicle_id] = {
+            marker: L.marker([v.latitude, v.longitude], { icon }).addTo(map)
+          };
         }
       });
     }
 
-    // Inicializa o Client ao invés de chamar fetchTransitData direto
+    // Inicializa o Client
     initClient();
   </script>
 </body>
