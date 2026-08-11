@@ -117,64 +117,95 @@ Pages.mapaOperacional = async function() {
     fetchLiveFleet();
     setInterval(fetchLiveFleet, 3000); // Polling CCO de 3 segundos
 
-
-    // 3. Buscar Abrigos (Pontos de Parada via Overpass API)
-    async function fetchBusStops() {
+    // 3. Pontos de Parada (Fixos do Supabase — sem Overpass API)
+    async function loadBusStopsFromDB() {
       try {
-        const bounds = window.opMap.getBounds();
-        const bbox = `${bounds.getSouth()},${bounds.getWest()},${bounds.getNorth()},${bounds.getEast()}`;
-        const query = `[out:json][timeout:15];(node["highway"="bus_stop"](${bbox});node["public_transport"="platform"](${bbox}););out body;`;
-        
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
-        
-        const response = await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`, {
-          signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-
-        const data = await response.json();
-        stopsLayerGroup.clearLayers(); // Limpa velhos antes de desenhar os novos da área
-
-        if(data && data.elements) {
-          data.elements.forEach(stop => {
-            const stopName = stop.tags?.name || "Ponto de Ônibus (Transcol)";
-            const iconHtml = `
-              <div style="background-color: #F59E0B; width: 14px; height: 14px; border-radius: 50%; border: 2px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;">
-                <span style="font-size: 8px;">🚏</span>
-              </div>
-            `;
-            const icon = L.divIcon({
-              className: 'custom-bus-stop-icon',
-              html: iconHtml,
-              iconSize: [14, 14],
-              iconAnchor: [7, 7]
-            });
-
-            L.marker([stop.lat, stop.lon], {icon: icon})
-             .bindPopup(`<b>${stopName}</b><br><small>Base Oficial GTFS / OSM</small>`)
-             .addTo(stopsLayerGroup);
-          });
+        const stops = await window.AppData.getBusStops();
+        if (!stops || stops.length === 0) {
+          console.warn('[MAPA] Nenhum ponto de ônibus cadastrado em bus_stops.');
+          return;
         }
+
+        stops.forEach(stop => {
+          if (!stop.latitude || !stop.longitude) return;
+
+          const iconHtml = `
+            <div style="background-color: #F59E0B; width: 18px; height: 18px; border-radius: 50%; border: 2px solid white; box-shadow: 0 1px 4px rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center;">
+              <span style="font-size: 10px;">🚏</span>
+            </div>
+          `;
+          const icon = L.divIcon({
+            className: 'custom-bus-stop-icon',
+            html: iconHtml,
+            iconSize: [18, 18],
+            iconAnchor: [9, 9]
+          });
+
+          const marker = L.marker([stop.latitude, stop.longitude], { icon }).addTo(stopsLayerGroup);
+
+          // Popup inicial com loading
+          marker.bindPopup(`
+            <div style="min-width:200px;">
+              <b style="font-size:14px;">${stop.name}</b><br>
+              <small style="color:#6B7280;">${stop.address || stop.city || ''}</small><br>
+              <small style="color:#9CA3AF;">Código: ${stop.code}</small><br>
+              <div id="popup-lines-${stop.code}" style="margin-top:8px; color:#9CA3AF; font-size:12px;">Clique para ver as linhas...</div>
+            </div>
+          `);
+
+          // Ao abrir o popup, busca as linhas reais
+          marker.on('popupopen', async () => {
+            const container = document.getElementById(`popup-lines-${stop.code}`);
+            if (!container) return;
+
+            container.innerHTML = '<div style="color:#3B82F6; font-size:12px;">⏳ Carregando linhas...</div>';
+
+            try {
+              const routes = await window.AppData.getRoutesByStop(stop.code);
+
+              if (!routes || routes.length === 0) {
+                container.innerHTML = '<div style="color:#9CA3AF; font-size:12px;">Nenhuma linha cadastrada.</div>';
+                return;
+              }
+
+              container.innerHTML = `
+                <div style="font-size:11px; font-weight:600; color:#374151; margin-bottom:6px;">LINHAS DESTA ESTAÇÃO (${routes.length})</div>
+                ${routes.map(sr => {
+                  const r = sr.routes || {};
+                  const codigo = r.codigo || r.route_short_name || sr.route_id;
+                  const nome = r.nome || '';
+                  const cor = r.route_color || '3B82F6';
+                  const dir = sr.direction || '';
+                  return `
+                    <div style="display:flex; align-items:center; gap:8px; padding:4px 0; border-bottom:1px solid #F3F4F6;">
+                      <span style="background:#${cor.replace('#','')}; color:white; padding:2px 8px; border-radius:4px; font-weight:700; font-size:12px; min-width:36px; text-align:center;">${codigo}</span>
+                      <div style="flex:1;">
+                        <div style="font-size:12px; font-weight:500; color:#1F2937;">${nome}</div>
+                        ${dir ? `<div style="font-size:10px; color:#9CA3AF;">→ ${dir}</div>` : ''}
+                      </div>
+                    </div>
+                  `;
+                }).join('')}
+              `;
+
+              // Atualiza o popup pra expandir corretamente
+              marker.getPopup().update();
+            } catch (err) {
+              console.error('[MAPA] Erro ao buscar linhas:', err);
+              container.innerHTML = '<div style="color:#EF4444; font-size:12px;">Erro ao carregar linhas.</div>';
+            }
+          });
+        });
+
+        console.log(`[MAPA] ${stops.length} pontos de ônibus carregados do Supabase.`);
       } catch (err) {
-        console.warn("Erro ao buscar paradas no Overpass API:", err);
+        console.error('[MAPA] Erro ao carregar pontos de ônibus:', err);
       }
     }
 
-    // Buscar paradas logo ao carregar
-    fetchBusStops();
-
-    // Refetch paradas ao mover o mapa (com debounce)
-    let moveTimeout;
-    window.opMap.on('moveend', () => {
-      clearTimeout(moveTimeout);
-      moveTimeout = setTimeout(() => {
-        // Só busca se a camada estiver ativa
-        if(document.getElementById('layer-stops').checked) {
-          fetchBusStops();
-        }
-      }, 800);
-    });
+    // Carrega os pontos de ônibus UMA VEZ (fixos, sem recarregar ao mover o mapa)
+    loadBusStopsFromDB();
 
   }, 100);
 };
+
