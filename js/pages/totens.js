@@ -142,8 +142,8 @@ window.TotensController = {
     document.getElementById('btn-salvar-totem').classList.remove('btn-secondary');
   },
 
-  currentFetchId: null,
-  currentAbortController: null,
+  // Cache dos pontos carregados do Supabase (evita múltiplas chamadas)
+  _cachedDBStops: null,
 
   async updateBusStopsOnMap() {
     if (!this.mapInstance) return;
@@ -173,9 +173,17 @@ window.TotensController = {
       iconAnchor: [14, 14]
     });
 
-    // 1. Renderiza pontos locais próximos se aplicável
-    this.REAL_BUS_STOPS.forEach(stop => {
-      const marker = L.marker([stop.lat, stop.lon], { icon: busIcon });
+    // Busca pontos do Supabase (com cache para não repetir)
+    const stops = await this.fetchBusStopsFromDB();
+    const bounds = this.mapInstance.getBounds();
+
+    stops.forEach(stop => {
+      if (!stop.latitude || !stop.longitude) return;
+
+      // Só renderiza pontos visíveis no viewport atual
+      if (!bounds.contains([stop.latitude, stop.longitude])) return;
+
+      const marker = L.marker([stop.latitude, stop.longitude], { icon: busIcon });
       
       marker.bindTooltip(`
         <div style="padding: 4px; font-family: 'Inter', sans-serif;">
@@ -184,7 +192,7 @@ window.TotensController = {
             ${stop.name}
           </div>
           <div style="font-size: 10px; color: #64748b; margin-top: 4px; display:flex; justify-content:space-between; align-items:center; gap:10px;">
-            <span>Cód: <b>${stop.ref}</b></span>
+            <span>Cód: <b>${stop.code}</b></span>
             <span style="color: #10B981; font-weight: 700;">🟢 GTFS Ativo</span>
           </div>
         </div>
@@ -197,18 +205,36 @@ window.TotensController = {
         L.DomEvent.stopPropagation(e);
         
         if (this.marker) this.mapInstance.removeLayer(this.marker);
-        this.marker = L.marker([stop.lat, stop.lon]).addTo(this.mapInstance);
-        this.marker.bindPopup(`<b>${stop.name}</b><br>Carregando endereço real...`).openPopup();
+        this.marker = L.marker([stop.latitude, stop.longitude]).addTo(this.mapInstance);
+        this.marker.bindPopup(`<b>${stop.name}</b><br>Carregando linhas...`).openPopup();
 
-        const realAddress = await this.getRealAddress(stop.lat, stop.lon);
-        this.marker.setPopupContent(`<b>${stop.name}</b><br><span style="font-size:12px; color:#333;">${realAddress || stop.address}</span>`).openPopup();
+        // Busca as linhas reais deste ponto via stop_routes
+        let routeInfo = '';
+        try {
+          const routes = await window.AppData.getRoutesByStop(stop.code);
+          if (routes && routes.length > 0) {
+            routeInfo = routes.map(sr => {
+              const r = sr.routes || {};
+              return r.codigo || r.route_short_name || sr.route_id;
+            }).join(', ');
+          }
+        } catch(err) { console.warn('Erro ao buscar linhas:', err); }
+
+        const popupContent = `
+          <div style="min-width:180px;">
+            <b>${stop.name}</b><br>
+            <span style="font-size:12px; color:#333;">${stop.address || ''}</span><br>
+            ${routeInfo ? `<div style="margin-top:6px; font-size:11px; color:#0056b3; font-weight:600;">Linhas: ${routeInfo}</div>` : ''}
+          </div>
+        `;
+        this.marker.setPopupContent(popupContent).openPopup();
 
         document.getElementById('nt-nome').value = stop.name;
-        document.getElementById('nt-codigo').value = stop.ref;
-        document.getElementById('nt-lat').value = stop.lat.toFixed(6);
-        document.getElementById('nt-lng').value = stop.lon.toFixed(6);
-        document.getElementById('nt-endereco').value = realAddress || stop.address;
-        document.getElementById('nt-linhas').value = stop.routes;
+        document.getElementById('nt-codigo').value = stop.code;
+        document.getElementById('nt-lat').value = stop.latitude.toFixed(6);
+        document.getElementById('nt-lng').value = stop.longitude.toFixed(6);
+        document.getElementById('nt-endereco').value = stop.address || `${stop.city || 'Serra'} - ES`;
+        document.getElementById('nt-linhas').value = routeInfo || '';
         
         // Exibe o status da sincronização GTFS
         const syncContainer = document.getElementById('gtfs-sync-container');
@@ -220,104 +246,26 @@ window.TotensController = {
 
       this.busStopsLayer.addLayer(marker);
     });
-
-    // 2. Busca e renderiza dinamicamente dados REAIS do Overpass API de acordo com a área do mapa visível (Grande Vitória completa)
-    const fetchId = Date.now();
-    this.currentFetchId = fetchId;
-
-    try {
-      const stops = await this.fetchBusStops();
-
-      // Se um novo updateBusStopsOnMap foi disparado enquanto esse aguardava, ignora esse retorno obsoleto
-      if (this.currentFetchId !== fetchId) return;
-
-      stops.forEach(stop => {
-        if (!stop.lat || !stop.lon) return;
-        
-        // Evita duplicados
-        const isDuplicate = this.REAL_BUS_STOPS.some(s => Math.abs(s.lat - stop.lat) < 0.0005 && Math.abs(s.lon - stop.lon) < 0.0005);
-        if (isDuplicate) return;
-
-        const marker = L.marker([stop.lat, stop.lon], { icon: busIcon });
-        const name = stop.tags?.name || 'Ponto de Ônibus';
-        const ref = stop.tags?.ref || `PT-${stop.id}`;
-        const operator = stop.tags?.operator || 'CETURB / Transcol';
-        const routeInfo = stop.tags?.route_ref || stop.tags?.routes || "501, 507, 523";
-        
-        marker.bindTooltip(`
-          <div style="padding: 4px; font-family: 'Inter', sans-serif;">
-            <div style="font-weight: 700; color: #1e293b; font-size: 12px; display:flex; align-items:center; gap:6px;">
-              <span style="background:#0056b3; color:white; padding:1px 4px; border-radius:3px; font-size:9px; font-weight:800;">TRANSCOL</span>
-              ${name}
-            </div>
-            <div style="font-size: 10px; color: #64748b; margin-top: 4px; display:flex; justify-content:space-between; align-items:center; gap:10px;">
-              <span>Cód: <b>${ref}</b></span>
-              <span style="color: #10B981; font-weight: 700;">🟢 GTFS Ativo</span>
-            </div>
-          </div>
-        `, { 
-          permanent: false, 
-          direction: 'top'
-        });
-
-        marker.on('click', async (e) => {
-          L.DomEvent.stopPropagation(e);
-          
-          if (this.marker) this.mapInstance.removeLayer(this.marker);
-          this.marker = L.marker([stop.lat, stop.lon]).addTo(this.mapInstance);
-          this.marker.bindPopup(`<b>${name}</b><br>Carregando endereço real...`).openPopup();
-
-          const realAddress = await this.getRealAddress(stop.lat, stop.lon);
-          this.marker.setPopupContent(`<b>${name}</b><br><span style="font-size:12px; color:#333;">${realAddress}</span>`).openPopup();
-
-          document.getElementById('nt-nome').value = name;
-          document.getElementById('nt-codigo').value = ref;
-          document.getElementById('nt-lat').value = stop.lat.toFixed(6);
-          document.getElementById('nt-lng').value = stop.lon.toFixed(6);
-          document.getElementById('nt-endereco').value = realAddress || 'Grande Vitória - ES';
-          document.getElementById('nt-linhas').value = routeInfo;
-          
-          // Exibe o status da sincronização GTFS
-          const syncContainer = document.getElementById('gtfs-sync-container');
-          if (syncContainer) syncContainer.style.display = 'flex';
-          
-          document.getElementById('btn-salvar-totem').disabled = false;
-          document.getElementById('btn-salvar-totem').classList.remove('btn-secondary');
-        });
-
-        this.busStopsLayer.addLayer(marker);
-      });
-    } catch(err) {
-      console.warn("Falha ao buscar pontos dinâmicos pelo Overpass", err);
-    }
   },
 
-  async fetchBusStops() {
-    if (!this.mapInstance) return [];
-
-    const bounds = this.mapInstance.getBounds();
+  async fetchBusStopsFromDB() {
+    // Retorna cache se já carregou
+    if (this._cachedDBStops) return this._cachedDBStops;
     
-    // Formato igual ao do mapa operacional para consistência exata
-    const bbox = `${bounds.getSouth()},${bounds.getWest()},${bounds.getNorth()},${bounds.getEast()}`;
-    
-    // Cancela requests anteriores se houver (evita empilhamento de chamadas)
-    if (this.currentAbortController) {
-      this.currentAbortController.abort();
-    }
-    this.currentAbortController = new AbortController();
-
-    // Query do Overpass exata à do mapa_operacional.js (sem restrição extra de "bus=yes")
-    const query = `[out:json][timeout:15];(node["highway"="bus_stop"](${bbox});node["public_transport"="platform"](${bbox}););out body;`;
-    const url = 'https://overpass-api.de/api/interpreter?data=' + encodeURIComponent(query);
     try {
-      const response = await fetch(url, { signal: this.currentAbortController.signal });
-      const data = await response.json();
-      return data.elements || [];
-    } catch (e) {
-      console.warn("Erro ao buscar pontos de ônibus via Overpass", e);
-      return [];
+      const stops = await window.AppData.getBusStops();
+      if (stops && stops.length > 0) {
+        this._cachedDBStops = stops;
+        console.log(`[TOTENS] ${stops.length} pontos de ônibus carregados do Supabase.`);
+        return stops;
+      }
+    } catch (err) {
+      console.warn('[TOTENS] Erro ao buscar pontos do Supabase:', err);
     }
+    
+    return [];
   },
+
 
   async simularBuscaEndereco() {
     const input = document.getElementById('input-busca-endereco').value;
