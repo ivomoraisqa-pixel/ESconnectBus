@@ -256,7 +256,7 @@ window.AppData = {
 
   /** Lista todas as estações (bus_stops) */
   async getBusStops() {
-    const { data, error } = await window.supabase.from('bus_stops').select('*').eq('active', true).order('name');
+    const { data, error } = await window.supabase.from('bus_stops').select('*').eq('active', true).order('name').limit(5000);
     if (error) { console.error('[STATION] Erro ao buscar estações:', error); return []; }
     return data || [];
   },
