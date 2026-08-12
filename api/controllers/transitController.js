@@ -478,7 +478,8 @@ export const syncTotem = async (req, res) => {
     if (todasAsCampanhas.length > 0) {
       const c = todasAsCampanhas[0];
       announcements.push({ id: c.id, text: c.nome + ' - ' + (c.descricao || '') });
-      activeCampaign = { title: c.nome, mediaUrl: null, type: c.formato || 'image' };
+      const mUrl = (c.totens_alvo && c.totens_alvo.arquivo_url) ? c.totens_alvo.arquivo_url : null;
+      activeCampaign = { title: c.nome, mediaUrl: mUrl, type: c.formato || 'image' };
     } else {
       announcements.push({ id: 99, text: 'Prefeitura da Serra - Cidade Inteligente' });
       activeCampaign = { title: 'Cidade Inteligente', mediaUrl: null, type: 'image' };

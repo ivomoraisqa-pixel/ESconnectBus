@@ -576,6 +576,10 @@ Pages.salvarCampanha = async function(e) {
       status: "ativa"
     };
 
+    if (window._campanhaMediaBase64) {
+      data.totens_alvo.arquivo_url = window._campanhaMediaBase64;
+    }
+
     if (window._editCampanhaId) {
       await window.AppData.updateCampanha(window._editCampanhaId, data);
       alert("Campanha atualizada com sucesso!");
@@ -589,6 +593,7 @@ Pages.salvarCampanha = async function(e) {
     }
     
     window.Router.navigate("campanhas");
+    window._campanhaMediaBase64 = null; // Clean up
   } catch (err) {
     console.error(err);
     alert("Erro ao salvar campanha: " + (err.message || JSON.stringify(err)));
@@ -610,19 +615,24 @@ Pages.handleMediaUpload = function(input) {
   const file = input.files && input.files[0];
   if (!file) return;
   
-  // Atualiza o texto do botão de upload
   document.getElementById('nc-midia-text').innerText = file.name;
   
-  // Cria o preview em tempo real
   const adView = document.getElementById('preview-view-ad');
-  if (!adView) return;
-  
-  const fileURL = URL.createObjectURL(file);
-  if (file.type.startsWith('video/')) {
-    adView.innerHTML = `<video src="${fileURL}" autoplay loop muted style="width:100%; height:100%; object-fit:cover;"></video>`;
-  } else if (file.type.startsWith('image/')) {
-    adView.innerHTML = `<div style="width:100%; height:100%; background-image:url(${fileURL}); background-size:cover; background-position:center;"></div>`;
+  if (adView) {
+    const fileURL = URL.createObjectURL(file);
+    if (file.type.startsWith('video/')) {
+      adView.innerHTML = `<video src="${fileURL}" autoplay loop muted style="width:100%; height:100%; object-fit:cover;"></video>`;
+    } else if (file.type.startsWith('image/')) {
+      adView.innerHTML = `<div style="width:100%; height:100%; background-image:url(${fileURL}); background-size:cover; background-position:center;"></div>`;
+    }
   }
+
+  // Convert to Base64 to save in the JSON payload
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    window._campanhaMediaBase64 = e.target.result;
+  };
+  reader.readAsDataURL(file);
 };
 
 Pages.excluirCampanha = async function(id) {
