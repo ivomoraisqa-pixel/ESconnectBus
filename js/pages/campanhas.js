@@ -363,11 +363,11 @@ Pages.novaCampanha = async function() {
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:20px;">
               <div>
                 <label style="font-size:13px; font-weight:500; display:block; margin-bottom:6px; color:#374151;">Horários de Exibição</label>
-                <select class="form-input form-select" style="width:100%; padding:10px 12px; border:1px solid #D1D5DB; border-radius:6px;">
-                  <option>Horário Comercial (08h - 18h)</option>
-                  <option>Pico Manhã (06h - 09h)</option>
-                  <option>Pico Tarde (17h - 20h)</option>
-                  <option>Integral (24h)</option>
+                <select id="nc-horarios" class="form-input form-select" style="width:100%; padding:10px 12px; border:1px solid #D1D5DB; border-radius:6px;">
+                  <option value="comercial">Horário Comercial (08h - 18h)</option>
+                  <option value="manha">Pico Manhã (06h - 09h)</option>
+                  <option value="tarde">Pico Tarde (17h - 20h)</option>
+                  <option value="integral">Integral (24h)</option>
                 </select>
               </div>
               <div>
@@ -556,6 +556,7 @@ Pages.salvarCampanha = async function(e) {
 
     const data_inicio = document.getElementById("nc-inicio").value;
     const data_fim = document.getElementById("nc-fim").value;
+    const horarios = document.getElementById("nc-horarios") ? document.getElementById("nc-horarios").value : "integral";
     // Converte datas YYYY-MM-DD para DD/MM/YYYY
     const formataData = (d) => {
        if(!d) return '';
@@ -572,7 +573,13 @@ Pages.salvarCampanha = async function(e) {
       descricao: 'Cliente: ' + document.getElementById("nc-cliente").value + ' | Prioridade: ' + document.getElementById("nc-prioridade").value,
       formato: document.getElementById("nc-tipo").value,
       periodo: periodoFormatado,
-      totens_alvo: { tipo: tipoAlvo, ids: idsAlvo },
+      totens_alvo: { 
+        tipo: tipoAlvo, 
+        ids: idsAlvo, 
+        data_inicio: data_inicio, 
+        data_fim: data_fim, 
+        horarios: horarios 
+      },
       status: "ativa"
     };
 

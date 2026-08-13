@@ -459,27 +459,51 @@ export const syncTotem = async (req, res) => {
     const { data: config } = await supabase.from('totem_config').select('*').eq('totem_id', totemId).single();
 
     const { data: campanhasGlobais } = await supabase.from('campanhas').select('*').eq('status', 'ativa');
-    const campanhasAlvo = (campanhasGlobais || []).filter(c => c.totens_alvo?.tipo === 'todos');
-
-    const { data: totemCampaigns } = await supabase
-      .from('totem_campaigns')
-      .select('*, campanhas(*)')
-      .eq('totem_id', totemId)
-      .eq('ativo', true);
-
+    
     let todasAsCampanhas = [];
-    if (totemCampaigns) totemCampaigns.forEach(tc => { if (tc.campanhas) todasAsCampanhas.push(tc.campanhas); });
-    campanhasAlvo.forEach(c => {
-      if (!todasAsCampanhas.find(tc => tc.id === c.id)) todasAsCampanhas.push(c);
-    });
+    const agora = new Date();
+    const horaAtual = agora.getHours();
+    // YYYY-MM-DD
+    const hojeStr = agora.toISOString().split('T')[0];
+    
+    if (campanhasGlobais) {
+      todasAsCampanhas = campanhasGlobais.filter(c => {
+        const alvo = c.totens_alvo || {};
+        
+        // 1. Verifica se o Totem é alvo
+        const isTarget = (alvo.tipo === 'todos') || (alvo.tipo === 'individual' && Array.isArray(alvo.ids) && (alvo.ids.includes(totemId.toString()) || alvo.ids.includes(parseInt(totemId))));
+        if (!isTarget) return false;
+        
+        // 2. Verifica as Datas
+        if (alvo.data_inicio && hojeStr < alvo.data_inicio) return false;
+        if (alvo.data_fim && hojeStr > alvo.data_fim) return false;
+        
+        // 3. Verifica o Horário
+        if (alvo.horarios) {
+          if (alvo.horarios === 'comercial' && (horaAtual < 8 || horaAtual >= 18)) return false;
+          if (alvo.horarios === 'manha' && (horaAtual < 6 || horaAtual >= 9)) return false;
+          if (alvo.horarios === 'tarde' && (horaAtual < 17 || horaAtual >= 20)) return false;
+          // 'integral' is always true
+        }
+        
+        return true;
+      });
+    }
 
     let announcements = [];
     let activeCampaign = null;
+    
+    // Incrementa exibições da campanha sorteada
     if (todasAsCampanhas.length > 0) {
-      const c = todasAsCampanhas[0];
+      // Pick one randomly or by logic (here we just pick the first or random)
+      const c = todasAsCampanhas[Math.floor(Math.random() * todasAsCampanhas.length)];
+      
       announcements.push({ id: c.id, text: c.nome + ' - ' + (c.descricao || '') });
       const mUrl = (c.totens_alvo && c.totens_alvo.arquivo_url) ? c.totens_alvo.arquivo_url : null;
       activeCampaign = { title: c.nome, mediaUrl: mUrl, type: c.formato || 'image' };
+      
+      // Assíncrono: atualiza o contador de exibição
+      supabase.rpc('increment_exibicoes', { campanha_id: c.id }).then(() => {}).catch(() => {});
     } else {
       announcements.push({ id: 99, text: 'Prefeitura da Serra - Cidade Inteligente' });
       activeCampaign = { title: 'Cidade Inteligente', mediaUrl: null, type: 'image' };
