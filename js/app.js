@@ -9,13 +9,13 @@
     'totens': { render: Pages.totens, title: 'Totens', subtitle: 'Gerencie todos os totens do sistema' },
     'localizacoes': { render: Pages.localizacoes, title: 'Localizações', subtitle: 'Localizações dos totens no mapa' },
     'linhas': { render: Pages.linhas, title: 'Linhas de Ônibus', subtitle: 'Gerencie as linhas de ônibus' },
-    'horarios': { render: Pages.horarios, title: 'Horários e Tempo Real', subtitle: 'Horários e monitoramento em tempo real' },
+
     'mapas': { render: Pages.mapas, title: 'Mapas e Pontos', subtitle: 'Gerencie mapas e pontos de parada' },
     'informativos': { render: Pages.informativos, title: 'Informativos', subtitle: 'Gerencie informativos exibidos nos totens' },
     'campanhas': { render: Pages.campanhas, title: 'Campanhas de Publicidade', subtitle: 'Crie e gerencie campanhas exibidos nos totens', headerActions: `<button class="btn btn-primary" onclick="window.Router.navigate('nova-campanha')">${window.Components ? window.Components.icon('plus', 16) : ''} Nova Campanha</button>` },
     'nova-campanha': { render: Pages.novaCampanha, title: 'Nova Campanha', subtitle: 'Criar e programar nova campanha com preview em tempo real' },
     'anuncios': { render: Pages.anuncios, title: 'Anúncios', subtitle: 'Gerencie anúncios de campanhas' },
-    'playlists': { render: Pages.playlists, title: 'Playlists', subtitle: 'Gerencie playlists de conteúdo' },
+
     'relatorios': { render: Pages.relatorios, title: 'Relatórios de Exibição', subtitle: 'Relatórios detalhados de exibição' },
     'usuarios': { render: Pages.usuarios, title: 'Usuários', subtitle: 'Gerencie os usuários do sistema' },
     'perfis': { render: Pages.perfis, title: 'Perfis e Permissões', subtitle: 'Gerencie perfis de acesso' },

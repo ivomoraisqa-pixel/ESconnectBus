@@ -4,85 +4,63 @@ window.Pages.relatorios = async function() {
   if (!main) return;
 
   const stats = await AppData.getDashboardStats();
+  const campanhas = await AppData.getCampanhas();
+  const totalExibicoes = campanhas.reduce((acc, curr) => acc + (curr.exibicoes || 0), 0);
 
   let html = `
     <div class="page-header">
       <div class="page-title">
         <h1>Relatórios & Analytics</h1>
-        <p>Métricas de exibição e performance das campanhas</p>
+        <p>Métricas reais de exibição das campanhas</p>
       </div>
       <div class="page-actions" style="display:flex; gap:10px;">
-        <button class="btn btn-secondary">${window.Components.icon ? window.Components.icon('download', 16) : ''} Exportar CSV</button>
-        <button class="btn btn-primary">${window.Components.icon ? window.Components.icon('printer', 16) : ''} Imprimir</button>
-      </div>
-    </div>
-    
-    <!-- Filtros -->
-    <div class="card" style="margin-bottom:20px;">
-      <div class="card-body" style="display:flex; gap:15px; flex-wrap:wrap;">
-        <div style="flex:1; min-width:200px;">
-          <label style="display:block; font-size:0.85em; font-weight:bold; margin-bottom:5px;">Período</label>
-          <select class="form-select" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
-            <option>Últimos 7 dias</option>
-            <option>Últimos 30 dias</option>
-            <option>Este Mês</option>
-          </select>
-        </div>
-        <div style="flex:1; min-width:200px;">
-          <label style="display:block; font-size:0.85em; font-weight:bold; margin-bottom:5px;">Totem</label>
-          <select class="form-select" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
-            <option>Todos os Totens</option>
-            <option>Terminal Laranjeiras</option>
-          </select>
-        </div>
-        <div style="flex:1; min-width:200px;">
-          <label style="display:block; font-size:0.85em; font-weight:bold; margin-bottom:5px;">Campanha</label>
-          <select class="form-select" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
-            <option>Todas as Campanhas</option>
-          </select>
-        </div>
+        <button class="btn btn-secondary">${window.Components && window.Components.icon ? window.Components.icon('download', 16) : '⬇️'} Exportar CSV</button>
+        <button class="btn btn-primary" onclick="window.print()">${window.Components && window.Components.icon ? window.Components.icon('printer', 16) : '🖨️'} Imprimir</button>
       </div>
     </div>
     
     <div class="kpi-row grid-4" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 20px;">
-      ${window.Components.kpiCard ? window.Components.kpiCard('Exibições Total', '1.2M', 'eye', 'blue') : '<div class="kpi-card">1.2M</div>'}
-      ${window.Components.kpiCard ? window.Components.kpiCard('Interações', '45.3k', 'pointer', 'green') : '<div class="kpi-card">45.3k</div>'}
-      ${window.Components.kpiCard ? window.Components.kpiCard('CTR Médio', '3.8%', 'percent', 'orange') : '<div class="kpi-card">3.8%</div>'}
-      ${window.Components.kpiCard ? window.Components.kpiCard('Tempo Médio', '14s', 'clock', 'purple') : '<div class="kpi-card">14s</div>'}
+      ${window.Components && window.Components.kpiCard ? window.Components.kpiCard({icon: window.Components.icon('eye', 24), iconBg: '#DBEAFE', iconColor: '#1E40AF', title: 'Exibições Total', value: totalExibicoes.toLocaleString(), subtitle: 'Todas campanhas', borderColor: '#3B82F6'}) : '<div class="card"><div class="card-body">Exibições Total: ' + totalExibicoes + '</div></div>'}
+      ${window.Components && window.Components.kpiCard ? window.Components.kpiCard({icon: window.Components.icon('megaphone', 24), iconBg: '#D1FAE5', iconColor: '#065F46', title: 'Campanhas', value: campanhas.length, subtitle: 'Cadastradas', borderColor: '#10B981'}) : '<div class="card"><div class="card-body">Campanhas: ' + campanhas.length + '</div></div>'}
     </div>
 
-    <div class="grid-2" style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-bottom:20px;">
-      <div class="card">
-        <div class="card-header"><h3 style="margin:0;">Exibições ao longo do tempo</h3></div>
-        <div class="card-body" style="height:300px; background:#f8fafc; display:flex; align-items:flex-end; justify-content:space-around; padding:20px;">
-          <!-- Fake Line Chart -->
-          <div style="width:40px; height:40%; background:#3b82f6; border-radius:4px 4px 0 0;"></div>
-          <div style="width:40px; height:50%; background:#3b82f6; border-radius:4px 4px 0 0;"></div>
-          <div style="width:40px; height:30%; background:#3b82f6; border-radius:4px 4px 0 0;"></div>
-          <div style="width:40px; height:70%; background:#3b82f6; border-radius:4px 4px 0 0;"></div>
-          <div style="width:40px; height:85%; background:#3b82f6; border-radius:4px 4px 0 0;"></div>
-          <div style="width:40px; height:60%; background:#3b82f6; border-radius:4px 4px 0 0;"></div>
-          <div style="width:40px; height:90%; background:#3b82f6; border-radius:4px 4px 0 0;"></div>
-        </div>
+    <div class="card" style="margin-bottom:20px;">
+      <div class="card-header">
+        <h3 style="margin:0;">Relatório de Exibição por Campanha</h3>
       </div>
-      <div class="card">
-        <div class="card-header"><h3 style="margin:0;">Top Campanhas</h3></div>
-        <div class="card-body">
-          <ul style="list-style:none; padding:0; margin:0;">
-            <li style="margin-bottom:15px;">
-              <div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>Verão Seguro</span><span>45%</span></div>
-              <div style="height:8px; background:#e2e8f0; border-radius:4px; overflow:hidden;"><div style="width:45%; height:100%; background:#10b981;"></div></div>
-            </li>
-            <li style="margin-bottom:15px;">
-              <div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>Prefeitura Info</span><span>30%</span></div>
-              <div style="height:8px; background:#e2e8f0; border-radius:4px; overflow:hidden;"><div style="width:30%; height:100%; background:#3b82f6;"></div></div>
-            </li>
-            <li style="margin-bottom:15px;">
-              <div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>Guia Turístico</span><span>15%</span></div>
-              <div style="height:8px; background:#e2e8f0; border-radius:4px; overflow:hidden;"><div style="width:15%; height:100%; background:#f59e0b;"></div></div>
-            </li>
-          </ul>
-        </div>
+      <div class="card-body" style="padding: 0;">
+        <table style="width:100%; border-collapse: collapse; text-align: left;">
+          <thead style="background: #F3F4F6; border-bottom: 1px solid #E5E7EB;">
+            <tr>
+              <th style="padding: 12px 20px; color: #6B7280; font-size: 12px; text-transform: uppercase;">Campanha</th>
+              <th style="padding: 12px 20px; color: #6B7280; font-size: 12px; text-transform: uppercase;">Período Programado</th>
+              <th style="padding: 12px 20px; color: #6B7280; font-size: 12px; text-transform: uppercase;">Status</th>
+              <th style="padding: 12px 20px; color: #6B7280; font-size: 12px; text-transform: uppercase;">Qtd. de Exibições</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${campanhas.map(c => {
+              const statusColors = {
+                'ativa': 'bg-green text-green-dark',
+                'pausada': 'bg-yellow text-yellow-dark',
+                'encerrada': 'bg-red text-red-dark'
+              };
+              const statusClass = statusColors[c.status] || 'bg-gray text-gray-dark';
+              return `
+                <tr style="border-bottom: 1px solid #F3F4F6;">
+                  <td style="padding: 15px 20px; font-weight: 500;">${c.nome}</td>
+                  <td style="padding: 15px 20px; color: #4B5563;">${c.periodo || 'N/A'}</td>
+                  <td style="padding: 15px 20px;">
+                    <span class="badge ${statusClass}">${c.status.toUpperCase()}</span>
+                  </td>
+                  <td style="padding: 15px 20px; font-weight: bold; font-size: 16px; color: #3B82F6;">
+                    ${(c.exibicoes || 0).toLocaleString()}
+                  </td>
+                </tr>
+              `;
+            }).join('') || '<tr><td colspan="4" style="padding:20px; text-align:center; color:#9ca3af;">Nenhuma campanha encontrada.</td></tr>'}
+          </tbody>
+        </table>
       </div>
     </div>
   `;
