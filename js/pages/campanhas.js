@@ -612,6 +612,25 @@ Pages.novaCampanha = async function() {
           }
         }
       }
+
+      // Preserva feedback visual da mídia existente se houver
+      if (c.totens_alvo.arquivo_url) {
+        const mediaTxt = document.getElementById("nc-midia-text");
+        if (mediaTxt) {
+          mediaTxt.innerHTML = `<span style="color:#10B981; font-weight:700;">✓ Mídia Atual Preservada (${(c.formato || 'Mídia').toUpperCase()})</span><br><small style="color:#6B7280;">Clique ou arraste caso queira substituir a mídia</small>`;
+        }
+
+        const adView = document.getElementById('preview-view-ad');
+        if (adView) {
+          const url = c.totens_alvo.arquivo_url;
+          const isVideo = url.indexOf('video') > -1 || url.endsWith('.mp4') || url.startsWith('data:video/');
+          if (isVideo) {
+            adView.innerHTML = `<video src="${url}" autoplay loop muted style="width:100%; height:100%; object-fit:cover;"></video>`;
+          } else {
+            adView.innerHTML = `<div style="width:100%; height:100%; background-image:url(${url}); background-size:cover; background-position:center;"></div>`;
+          }
+        }
+      }
     }
   }
 };
@@ -677,22 +696,30 @@ Pages.salvarCampanha = async function(e) {
       status: "ativa"
     };
 
+    // Mantém mídia existente se não tiver subido uma nova
     if (window._campanhaMediaBase64) {
       data.totens_alvo.arquivo_url = window._campanhaMediaBase64;
+    } else if (window._editCampanhaData && window._editCampanhaData.totens_alvo && window._editCampanhaData.totens_alvo.arquivo_url) {
+      data.totens_alvo.arquivo_url = window._editCampanhaData.totens_alvo.arquivo_url;
     }
 
     if (window._editCampanhaId) {
+      if (window._editCampanhaData) {
+        data.exibicoes = window._editCampanhaData.exibicoes || 0;
+        data.ctr = window._editCampanhaData.ctr || 0;
+        data.status = window._editCampanhaData.status || "ativa";
+      }
       await window.AppData.updateCampanha(window._editCampanhaId, data);
       alert("Campanha atualizada com sucesso!");
       window._editCampanhaId = null;
       window._editCampanhaData = null;
     } else {
       data.exibicoes = 0;
-      data.investimento = Math.floor(Math.random() * 5000) + 1000;
       await window.AppData.createCampanha(data);
-      alert("Campanha salva com sucesso no Supabase!");
+      alert("Campanha salva com sucesso!");
     }
     
+    delete window._appDataCache['campanhas'];
     window.Router.navigate("campanhas");
     window._campanhaMediaBase64 = null; // Clean up
   } catch (err) {
