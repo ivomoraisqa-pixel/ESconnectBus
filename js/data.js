@@ -32,10 +32,74 @@ window.AppData = {
   async getLinhas() { return this.fetchAll('linhas'); },
 
   // Campanhas
-  async getCampanhas() { return this.fetchAll('campanhas'); },
+  async getCampanhas(force = false) { return this.fetchAll('campanhas', force); },
   async getCampanhasAtivas() { 
     const { data } = await window.supabase.from('campanhas').select('*').eq('status', 'ativa');
     return data || []; 
+  },
+  async incrementExibicoes(campanhaId) {
+    if (!campanhaId) return;
+    try {
+      const { data } = await window.supabase.from('campanhas').select('exibicoes').eq('id', campanhaId).single();
+      if (data) {
+        const novaQtd = (data.exibicoes || 0) + 1;
+        await window.supabase.from('campanhas').update({ exibicoes: novaQtd }).eq('id', campanhaId);
+        if (window._appDataCache['campanhas'] && window._appDataCache['campanhas'].data) {
+          const item = window._appDataCache['campanhas'].data.find(c => c.id === campanhaId);
+          if (item) item.exibicoes = novaQtd;
+        }
+      }
+    } catch(err) {
+      console.warn('[APPDATA] Aviso ao incrementar exibição:', err);
+    }
+  },
+  calcularEstimativaExibicoes(c, todasCampanhas = [], totalTotensCount = 6) {
+    const alvo = c.totens_alvo || {};
+    
+    // 1. Número de Totens Alvo
+    let numTotens = totalTotensCount;
+    if (alvo.tipo === 'individual' && Array.isArray(alvo.ids) && alvo.ids.length > 0) {
+      numTotens = alvo.ids.length;
+    }
+
+    // 2. Horas por dia em segundos
+    let segundosPorDia = 86400; // integral (24h)
+    if (alvo.horarios === 'comercial') segundosPorDia = 10 * 3600; // 10h (08h - 18h)
+    else if (alvo.horarios === 'manha') segundosPorDia = 3 * 3600; // 3h (06h - 09h)
+    else if (alvo.horarios === 'tarde') segundosPorDia = 3 * 3600; // 3h (17h - 20h)
+
+    // 3. Dias da campanha
+    let dias = 30;
+    if (alvo.data_inicio && alvo.data_fim) {
+      const d1 = new Date(alvo.data_inicio);
+      const d2 = new Date(alvo.data_fim);
+      const diff = Math.ceil((d2 - d1) / (1000 * 60 * 60 * 24));
+      if (!isNaN(diff) && diff > 0) dias = diff;
+    } else if (c.dias_restantes) {
+      dias = parseInt(c.dias_restantes);
+    }
+
+    // 4. Tempo de Exibição desta campanha (segundos)
+    const tempoExibicaoProprio = alvo.tempo_exibicao ? parseInt(alvo.tempo_exibicao) : 15;
+
+    // 5. Cálculo de compartilhamento com outras campanhas ativas
+    let campanhasConcorrentes = todasCampanhas.filter(outra => outra.status === 'ativa');
+    if (campanhasConcorrentes.length === 0) campanhasConcorrentes = [c];
+
+    let tempoCicloTotal = 0;
+    campanhasConcorrentes.forEach(comp => {
+      const compTempo = (comp.totens_alvo && comp.totens_alvo.tempo_exibicao) ? parseInt(comp.totens_alvo.tempo_exibicao) : 15;
+      tempoCicloTotal += compTempo + 15; // 15s do painel principal por transição
+    });
+
+    if (tempoCicloTotal <= 0) tempoCicloTotal = 30;
+
+    // Inserções por dia por totem
+    const insercoesPorDiaPorTotem = segundosPorDia / tempoCicloTotal;
+    
+    // Total estimado no ciclo de vida
+    const totalEstimado = Math.round(numTotens * insercoesPorDiaPorTotem * dias);
+    return totalEstimado;
   },
   async getCampanhasByStatus(s) { 
     if(s === 'todas') return this.getCampanhas();

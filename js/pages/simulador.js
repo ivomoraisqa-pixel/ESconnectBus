@@ -297,6 +297,11 @@ Pages.renderSimuladorTotemFrame = function(stationName, transitData, campanhasAl
         durationSeconds = (currentCamp.totens_alvo && currentCamp.totens_alvo.tempo_exibicao) ? parseInt(currentCamp.totens_alvo.tempo_exibicao) : 15;
         const mediaUrl = currentCamp.totens_alvo ? currentCamp.totens_alvo.arquivo_url : null;
         
+        // Incremente contagem em tempo real!
+        if (currentCamp && currentCamp.id && window.AppData && window.AppData.incrementExibicoes) {
+          window.AppData.incrementExibicoes(currentCamp.id);
+        }
+        
         if (mediaUrl) {
           if (mediaUrl.indexOf('video') > -1 || mediaUrl.endsWith('.mp4') || mediaUrl.startsWith('data:video/')) {
             mediaContent.innerHTML = `<video src="${mediaUrl}" autoplay loop muted style="width:100%; height:100%; object-fit:cover;"></video>`;

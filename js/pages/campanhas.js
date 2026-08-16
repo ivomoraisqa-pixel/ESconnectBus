@@ -173,37 +173,48 @@ Pages.campanhas = async function() {
 
 Pages.renderCampanhasTable = function(campanhas) {
   const tbody = document.getElementById('campanhas-tbody');
-  tbody.innerHTML = campanhas.map(c => `
-    <tr style="border-bottom:1px solid #F3F4F6;">
-      <td style="padding:12px 20px;">
-        <div style="display:flex;align-items:center;gap:10px;">
-          <div style="width:36px;height:36px;border-radius:8px;background:${c.status==='ativa'?'#2D9B5A':'#6B7280'};display:flex;align-items:center;justify-content:center;color:white;font-size:14px;">📢</div>
-          <div>
-            <div style="font-weight:600;color:#1A1A2E;">${c.nome}</div>
-            <div style="font-size:12px;color:#6B7280;">${c.descricao}</div>
+  if (!tbody) return;
+  tbody.innerHTML = campanhas.map(c => {
+    const estTotal = window.AppData.calcularEstimativaExibicoes ? window.AppData.calcularEstimativaExibicoes(c, campanhas, 6) : 1000;
+    const exibReal = c.exibicoes || 0;
+    const pct = Math.min(100, Math.round((exibReal / Math.max(1, estTotal)) * 100));
+
+    return `
+      <tr style="border-bottom:1px solid #F3F4F6;">
+        <td style="padding:12px 20px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="width:36px;height:36px;border-radius:8px;background:${c.status==='ativa'?'#2D9B5A':'#6B7280'};display:flex;align-items:center;justify-content:center;color:white;font-size:14px;">📢</div>
+            <div>
+              <div style="font-weight:600;color:#1A1A2E;">${c.nome}</div>
+              <div style="font-size:12px;color:#6B7280;">${c.descricao || ''}</div>
+            </div>
           </div>
-        </div>
-      </td>
-      <td style="padding:12px 20px;">
-        <div style="color:#1A1A2E;">${c.periodo || (c.data_inicio && c.data_fim ? c.data_inicio + ' - ' + c.data_fim : 'Não definido')}</div>
-        <div style="font-size:12px;color:#6B7280;">${c.dias_restantes || 'undefined'} dias restantes</div>
-      </td>
-      <td style="padding:12px 20px;"><strong>${c.totens || 0}</strong></td>
-      <td style="padding:12px 20px;">
-        <div style="color:#1A1A2E;">${c.anuncios || 0}</div>
-        <div style="font-size:12px;color:#10B981;">${c.progresso || 0}%</div>
-      </td>
-      <td style="padding:12px 20px;color:#1A1A2E;font-weight:500;">${(c.exibicoes || 0).toLocaleString('pt-BR')}</td>
-      <td style="padding:12px 20px;color:#1A1A2E;">${(c.ctr || 0).toFixed(2).replace('.', ',')}%</td>
-      <td style="padding:12px 20px;color:#1A1A2E;">R$ ${(c.investimento || 0).toFixed(2).replace('.', ',')}</td>
-      <td style="padding:12px 20px;">${Components.actionButtons([
-        {icon:'eye',title:'Visualizar',onclick:`window.Pages.verCampanhaPreview(${c.id})`},
-        {icon:'edit',title:'Editar',onclick:`window.Pages.editarCampanha(${c.id})`},
-        {icon:c.status==='ativa'?'pause-circle':'play-circle',title:c.status==='ativa'?'Pausar':'Ativar',onclick:`window.Pages.toggleCampanha(${c.id}, '${c.status}')`},
-        {icon:'trash',title:'Excluir',color:'#EF4444',onclick:`window.Pages.excluirCampanha(${c.id})`}
-      ])}</td>
-    </tr>
-  `).join('');
+        </td>
+        <td style="padding:12px 20px;">
+          <div style="color:#1A1A2E;">${c.periodo || (c.data_inicio && c.data_fim ? c.data_inicio + ' - ' + c.data_fim : 'Não definido')}</div>
+          <div style="font-size:12px;color:#6B7280;">${c.totens_alvo?.tempo_exibicao || 15}s por rotação</div>
+        </td>
+        <td style="padding:12px 20px;"><strong>${(c.totens_alvo?.tipo === 'individual' && Array.isArray(c.totens_alvo.ids)) ? c.totens_alvo.ids.length : 'Todos'}</strong></td>
+        <td style="padding:12px 20px;">
+          <div style="color:#1A1A2E; font-weight:600;">${pct}%</div>
+          <div style="font-size:12px;color:#10B981;">Meta: ${estTotal.toLocaleString('pt-BR')}</div>
+        </td>
+        <td style="padding:12px 20px;color:#2563EB;font-weight:800;font-size:15px;">
+          ⚡ ${exibReal.toLocaleString('pt-BR')}
+        </td>
+        <td style="padding:12px 20px;color:#059669;font-weight:700;">
+          🎯 ${estTotal.toLocaleString('pt-BR')}
+        </td>
+        <td style="padding:12px 20px;color:#1A1A2E;">R$ ${(c.investimento || 0).toFixed(2).replace('.', ',')}</td>
+        <td style="padding:12px 20px;">${Components.actionButtons([
+          {icon:'eye',title:'Visualizar',onclick:`window.Pages.verCampanhaPreview(${c.id})`},
+          {icon:'edit',title:'Editar',onclick:`window.Pages.editarCampanha(${c.id})`},
+          {icon:c.status==='ativa'?'pause-circle':'play-circle',title:c.status==='ativa'?'Pausar':'Ativar',onclick:`window.Pages.toggleCampanha(${c.id}, '${c.status}')`},
+          {icon:'trash',title:'Excluir',color:'#EF4444',onclick:`window.Pages.excluirCampanha(${c.id})`}
+        ])}</td>
+      </tr>
+    `;
+  }).join('');
 };
 
 Pages.filterCampanhas = async function(status) {
