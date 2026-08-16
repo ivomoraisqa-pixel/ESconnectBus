@@ -476,7 +476,11 @@ export const syncTotem = async (req, res) => {
         
         // 2. Verifica as Datas
         if (alvo.data_inicio && hojeStr < alvo.data_inicio) return false;
-        if (alvo.data_fim && hojeStr > alvo.data_fim) return false;
+        if (alvo.data_fim && hojeStr > alvo.data_fim) {
+          // Atualiza status para encerrada de forma assíncrona
+          supabase.from('campanhas').update({ status: 'encerrada' }).eq('id', c.id).then(()=>{}).catch(()=>{});
+          return false;
+        }
         
         // 3. Verifica o Horário
         if (alvo.horarios) {

@@ -101,6 +101,26 @@ window.AppData = {
     const totalEstimado = Math.round(numTotens * insercoesPorDiaPorTotem * dias);
     return totalEstimado;
   },
+  async checkExpiredCampanhas(campanhas) {
+    if (!campanhas || campanhas.length === 0) return;
+    const hojeStr = new Date().toISOString().split('T')[0];
+    for (const c of campanhas) {
+      if (c.status === 'ativa' && c.totens_alvo && c.totens_alvo.data_fim && hojeStr > c.totens_alvo.data_fim) {
+        c.status = 'encerrada';
+        try {
+          await window.supabase.from('campanhas').update({ status: 'encerrada' }).eq('id', c.id);
+        } catch(e) {
+          console.warn('[APPDATA] Erro ao encerrar campanha expirada:', e);
+        }
+      }
+    }
+  },
+  async getCampanhasAtivas() { 
+    const { data } = await window.supabase.from('campanhas').select('*').eq('status', 'ativa');
+    const campanhas = data || [];
+    await this.checkExpiredCampanhas(campanhas);
+    return campanhas.filter(c => c.status === 'ativa'); 
+  },
   startBackgroundPlaybackEngine() {
     if (window._bgPlaybackEngineStarted) return;
     window._bgPlaybackEngineStarted = true;
