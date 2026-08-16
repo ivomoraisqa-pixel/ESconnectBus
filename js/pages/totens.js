@@ -675,25 +675,34 @@ window.TotensController = {
       return true;
     });
 
-    const activeCampanha = campanhasAlvo.length > 0 ? campanhasAlvo[Math.floor(Math.random() * campanhasAlvo.length)] : null;
-    
+    let campaignIndex = 0;
     const adView = document.getElementById('totem-detalhe-ad');
     const mapView = document.getElementById('totem-detalhe-mapa');
-    
-    if (activeCampanha) {
+
+    const updateCampaignMedia = () => {
+      if (campanhasAlvo.length === 0) return;
+      const activeCampanha = campanhasAlvo[campaignIndex];
       document.getElementById('totem-detalhe-ad-title').textContent = activeCampanha.nome || 'PUBLICIDADE';
       const clienteNome = activeCampanha.descricao ? activeCampanha.descricao.split('|')[0].replace('Cliente:', '').trim() : '';
       document.getElementById('totem-detalhe-ad-client').textContent = clienteNome;
       
       const mediaContainer = document.getElementById('totem-detalhe-ad-media');
       const arquivoUrl = activeCampanha.totens_alvo ? activeCampanha.totens_alvo.arquivo_url : null;
-      if (mediaContainer && arquivoUrl) {
-        if (arquivoUrl.indexOf('video') > -1 || arquivoUrl.endsWith('.mp4')) {
-          mediaContainer.innerHTML = `<video src="${arquivoUrl}" autoplay loop muted style="width:100%; height:100%; object-fit:cover;"></video>`;
+      if (mediaContainer) {
+        if (arquivoUrl) {
+          if (arquivoUrl.indexOf('video') > -1 || arquivoUrl.endsWith('.mp4')) {
+            mediaContainer.innerHTML = `<video src="${arquivoUrl}" autoplay loop muted style="width:100%; height:100%; object-fit:cover;"></video>`;
+          } else {
+            mediaContainer.innerHTML = `<img src="${arquivoUrl}" style="width:100%; height:100%; object-fit:cover;" />`;
+          }
         } else {
-          mediaContainer.innerHTML = `<img src="${arquivoUrl}" style="width:100%; height:100%; object-fit:cover;" />`;
+          mediaContainer.innerHTML = `<div style="padding:20px; text-align:center; color:#9CA3AF;">[ Mídia: ${activeCampanha.formato || 'Imagem'} ]</div>`;
         }
       }
+    };
+
+    if (campanhasAlvo.length > 0) {
+      updateCampaignMedia();
     } else {
       document.getElementById('totem-detalhe-ad-title').textContent = 'SEM CAMPANHAS ATIVAS';
       document.getElementById('totem-detalhe-ad-client').textContent = '';
@@ -701,19 +710,21 @@ window.TotensController = {
 
     let showAd = false;
     this.previewInterval = setInterval(() => {
-      if (!document.getElementById('modal-detalhes').classList.contains('active')) {
+      if (!document.getElementById('modal-detalhes') || !document.getElementById('modal-detalhes').classList.contains('active')) {
         clearInterval(this.previewInterval);
         return;
       }
       showAd = !showAd;
-      if (showAd && activeCampanha) {
+      if (showAd && campanhasAlvo.length > 0) {
+        updateCampaignMedia();
         mapView.style.opacity = '0';
         adView.style.opacity = '1';
+        campaignIndex = (campaignIndex + 1) % campanhasAlvo.length;
       } else {
         mapView.style.opacity = '1';
         adView.style.opacity = '0';
       }
-    }, 4000);
+    }, 15000);
   },
 
   // ================================================================

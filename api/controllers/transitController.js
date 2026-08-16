@@ -492,18 +492,27 @@ export const syncTotem = async (req, res) => {
 
     let announcements = [];
     let activeCampaign = null;
+    let campaignList = [];
     
-    // Incrementa exibições da campanha sorteada
     if (todasAsCampanhas.length > 0) {
-      // Pick one randomly or by logic (here we just pick the first or random)
-      const c = todasAsCampanhas[Math.floor(Math.random() * todasAsCampanhas.length)];
-      
-      announcements.push({ id: c.id, text: c.nome + ' - ' + (c.descricao || '') });
+      campaignList = todasAsCampanhas.map(c => ({
+        id: c.id,
+        title: c.nome,
+        cliente: c.descricao ? c.descricao.split('|')[0].replace('Cliente:', '').trim() : '',
+        mediaUrl: (c.totens_alvo && c.totens_alvo.arquivo_url) ? c.totens_alvo.arquivo_url : null,
+        type: c.formato || 'image',
+        durationSeconds: 15
+      }));
+
+      const c = todasAsCampanhas[0];
+      announcements = todasAsCampanhas.map(item => ({ id: item.id, text: item.nome + ' - ' + (item.descricao || '') }));
       const mUrl = (c.totens_alvo && c.totens_alvo.arquivo_url) ? c.totens_alvo.arquivo_url : null;
       activeCampaign = { title: c.nome, mediaUrl: mUrl, type: c.formato || 'image' };
-      
-      // Assíncrono: atualiza o contador de exibição
-      supabase.rpc('increment_exibicoes', { campanha_id: c.id }).then(() => {}).catch(() => {});
+
+      // Assíncrono: atualiza contador de exibição de todas as campanhas vinculadas ao totem
+      todasAsCampanhas.forEach(cItem => {
+        supabase.rpc('increment_exibicoes', { campanha_id: cItem.id }).then(() => {}).catch(() => {});
+      });
     } else {
       announcements.push({ id: 99, text: 'Prefeitura da Serra - Cidade Inteligente' });
       activeCampaign = { title: 'Cidade Inteligente', mediaUrl: null, type: 'image' };
@@ -577,10 +586,12 @@ export const syncTotem = async (req, res) => {
       mode:        TRANSIT_DATA_MODE,
       commands:    commands || [],
       configSync: {
-        themeColor:    config ? (config.tema === 'escuro' ? '#1A1A2E' : '#FFFFFF') : '#2D9B5A',
-        config:        config || {},
+        themeColor:              config ? (config.tema === 'escuro' ? '#1A1A2E' : '#FFFFFF') : '#2D9B5A',
+        config:                  config || {},
         announcements,
-        campaign:      activeCampaign
+        campaign:                activeCampaign,
+        campaigns:               campaignList,
+        carouselIntervalSeconds: 15
       },
       transit: transitData
     });

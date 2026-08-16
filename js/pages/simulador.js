@@ -159,13 +159,11 @@ Pages.iniciarSimulador = async function() {
       return true;
     });
 
-    const activeCampanha = campanhasAlvo.length > 0 ? campanhasAlvo[Math.floor(Math.random() * campanhasAlvo.length)] : null;
+    Pages.renderSimuladorTotemFrame(stationName, transitData, campanhasAlvo);
 
-    Pages.renderSimuladorTotemFrame(stationName, transitData, activeCampanha);
-
-    // Auto-atualização a cada 30s
+    // Auto-atualização de trânsito a cada 60s
     if (window._simInterval) clearInterval(window._simInterval);
-    window._simInterval = setInterval(() => Pages.iniciarSimulador(), 30000);
+    window._simInterval = setInterval(() => Pages.iniciarSimulador(), 60000);
 
   } catch (err) {
     console.error('[SIMULADOR] Erro:', err);
@@ -176,9 +174,11 @@ Pages.iniciarSimulador = async function() {
   }
 };
 
-Pages.renderSimuladorTotemFrame = function(stationName, transitData, activeCampanha) {
+Pages.renderSimuladorTotemFrame = function(stationName, transitData, campanhasAlvo = []) {
   const container = document.getElementById('simulador-container');
   if (!container) return;
+
+  if (window._simCarouselInterval) clearInterval(window._simCarouselInterval);
 
   const lines    = transitData.lines    || [];
   const vehicles = transitData.vehicles || [];
@@ -209,63 +209,106 @@ Pages.renderSimuladorTotemFrame = function(stationName, transitData, activeCampa
           </div>`;
       }).join('');
 
-  let adHtml = '';
-  if (activeCampanha && activeCampanha.totens_alvo && activeCampanha.totens_alvo.arquivo_url) {
-    const url = activeCampanha.totens_alvo.arquivo_url;
-    if (url.indexOf('video') > -1 || url.endsWith('.mp4')) {
-      adHtml = `<video src="${url}" autoplay loop muted style="position:absolute; width:100%; height:100%; object-fit:cover;"></video>`;
-    } else {
-      adHtml = `<div style="position:absolute; inset:0; background-image:url(${url}); background-size:cover; background-position:center;"></div>`;
-    }
-  } else {
-    adHtml = `
-      <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg, #1E3A8A, #3B82F6); color:white; flex-direction:column;">
-        <div style="font-size:80px; margin-bottom:30px;">🚌</div>
-        <div style="font-size:60px; font-weight:800; margin-bottom:16px; text-align:center;">TRANSPORTE INTELIGENTE</div>
-        <div style="font-size:36px; font-weight:500;">Prefeitura da Serra</div>
-      </div>
-    `;
-  }
-
   container.innerHTML = `
     <!-- Frame do Totem Físico 1080×1920 (scale 0.35) -->
-    <div style="width:1080px; height:1920px; transform:scale(0.35); transform-origin:center top; background:#1A1A2E; overflow:hidden; font-family:'Inter', sans-serif; color:white; border:32px solid #111; border-radius:72px; box-sizing:border-box; display:flex; flex-direction:column; box-shadow:0 40px 100px rgba(0,0,0,0.5), inset 0 0 20px rgba(0,0,0,0.5);">
+    <div style="width:1080px; height:1920px; transform:scale(0.35); transform-origin:center top; background:#1A1A2E; overflow:hidden; font-family:'Inter', sans-serif; color:white; border:32px solid #111; border-radius:72px; box-sizing:border-box; display:flex; flex-direction:column; box-shadow:0 40px 100px rgba(0,0,0,0.5), inset 0 0 20px rgba(0,0,0,0.5); position:relative;">
 
-      <!-- Topo -->
-      <div style="display:flex; justify-content:space-between; align-items:center; padding:32px 40px; background:#1A1A2E; flex-shrink:0;">
-        <div>
-          <div style="font-weight:700; font-size:40px;">SERRA</div>
-          <div style="font-size:28px; color:#A3B8B0;">${stationName.toUpperCase()}</div>
+      <!-- VIEW 1: PAINEL PRINCIPAL (HORÁRIOS E MAPA) -->
+      <div id="sim-view-principal" style="position:absolute; inset:0; display:flex; flex-direction:column; background:#1A1A2E; transition:opacity 0.5s ease-in-out; opacity:1; z-index:1;">
+        <!-- Topo -->
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:32px 40px; background:#1A1A2E; flex-shrink:0;">
+          <div>
+            <div style="font-weight:700; font-size:40px;">SERRA</div>
+            <div style="font-size:28px; color:#A3B8B0;">${stationName.toUpperCase()}</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-weight:700; font-size:60px;">${timeStr}</div>
+            <div style="font-size:24px; color:#A3B8B0;">${dateStr}</div>
+          </div>
         </div>
-        <div style="text-align:right;">
-          <div style="font-weight:700; font-size:60px;">${timeStr}</div>
-          <div style="font-size:24px; color:#A3B8B0;">${dateStr}</div>
+
+        <!-- Corpo -->
+        <div style="flex:1; background:white; display:flex; flex-direction:column; overflow:hidden;">
+          <div style="background:#2D9B5A; padding:20px 40px; font-weight:700; font-size:32px; color:white; display:flex; justify-content:space-between; flex-shrink:0;">
+            <span>PRÓXIMOS ÔNIBUS</span>
+            <span style="font-size:22px; opacity:0.85;">TEMPO REAL</span>
+          </div>
+
+          <!-- Lista de linhas -->
+          <div style="background:white; color:#1A1A2E; flex:1; overflow:hidden;">
+            ${busRows}
+          </div>
+
+          <!-- Rodapé de Trânsito / Mini Mapa -->
+          <div style="height:480px; background:#E5E7EB; border-top:4px solid #D1D5DB; display:flex; align-items:center; justify-content:center; color:#6B7280; font-size:32px; font-weight:700; flex-shrink:0;">
+            🗺️ MAPA DE LINHAS & ITINERÁRIOS EM TEMPO REAL
+          </div>
+        </div>
+
+        <!-- Rodapé -->
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:28px 40px; background:#1A1A2E; border-top:2px solid #333; flex-shrink:0;">
+          <div style="font-size:28px;"><strong style="color:white;">SerraBus</strong> <span style="color:#2D9B5A; font-weight:300;">CONECT</span></div>
+          <div style="font-size:24px; color:#A3B8B0;">📶 Wi-Fi Grátis</div>
         </div>
       </div>
 
-      <!-- Corpo -->
-      <div style="flex:1; background:white; display:flex; flex-direction:column; overflow:hidden;">
-        <div style="background:#2D9B5A; padding:20px 40px; font-weight:700; font-size:32px; color:white; display:flex; justify-content:space-between; flex-shrink:0;">
-          <span>PRÓXIMOS ÔNIBUS</span>
-          <span style="font-size:22px; opacity:0.85;">TEMPO REAL</span>
-        </div>
-
-        <!-- Lista de linhas — SOMENTE da estação -->
-        <div style="background:white; color:#1A1A2E; flex:1; overflow:hidden;">
-          ${busRows}
-        </div>
-
-        <!-- Área de publicidade -->
-        <div style="height:580px; background:#000; position:relative; overflow:hidden; flex-shrink:0;">
-          ${adHtml}
+      <!-- VIEW 2: TELA CHEIA DA CAMPANHA (PUBLICIDADE) -->
+      <div id="sim-view-ad" style="position:absolute; inset:0; background:#000; display:flex; flex-direction:column; transition:opacity 0.5s ease-in-out; opacity:0; z-index:2;">
+        <div id="sim-ad-media-content" style="width:100%; height:100%; position:relative; display:flex; align-items:center; justify-content:center;">
         </div>
       </div>
 
-      <!-- Rodapé -->
-      <div style="display:flex; justify-content:space-between; align-items:center; padding:28px 40px; background:#1A1A2E; border-top:2px solid #333; flex-shrink:0;">
-        <div style="font-size:28px;"><strong style="color:white;">SerraBus</strong> <span style="color:#2D9B5A; font-weight:300;">CONECT</span></div>
-        <div style="font-size:24px; color:#A3B8B0;">📶 Wi-Fi Grátis</div>
-      </div>
     </div>
   `;
+
+  // Se houver campanhas direcionadas, inicia o Carrossel Alternado de 15 segundos
+  if (campanhasAlvo.length > 0) {
+    let showAd = false;
+    let campaignIndex = 0;
+
+    window._simCarouselInterval = setInterval(() => {
+      const viewPrincipal = document.getElementById('sim-view-principal');
+      const viewAd = document.getElementById('sim-view-ad');
+      const mediaContent = document.getElementById('sim-ad-media-content');
+
+      if (!viewPrincipal || !viewAd) {
+        clearInterval(window._simCarouselInterval);
+        return;
+      }
+
+      showAd = !showAd;
+
+      if (showAd) {
+        // Carrega a campanha atual da rotação
+        const currentCamp = campanhasAlvo[campaignIndex];
+        const mediaUrl = currentCamp.totens_alvo ? currentCamp.totens_alvo.arquivo_url : null;
+        
+        if (mediaUrl) {
+          if (mediaUrl.indexOf('video') > -1 || mediaUrl.endsWith('.mp4')) {
+            mediaContent.innerHTML = `<video src="${mediaUrl}" autoplay loop muted style="width:100%; height:100%; object-fit:cover;"></video>`;
+          } else {
+            mediaContent.innerHTML = `<div style="width:100%; height:100%; background-image:url(${mediaUrl}); background-size:cover; background-position:center;"></div>`;
+          }
+        } else {
+          mediaContent.innerHTML = `
+            <div style="text-align:center; padding:40px; color:white;">
+              <div style="font-size:64px; font-weight:800; color:#F59E0B; margin-bottom:20px;">${currentCamp.nome.toUpperCase()}</div>
+              <div style="font-size:36px; color:#A3B8B0;">[ Mídia da Campanha ]</div>
+            </div>
+          `;
+        }
+
+        // Exibe Tela de Anúncio
+        viewPrincipal.style.opacity = '0';
+        viewAd.style.opacity = '1';
+
+        // Avança para a próxima campanha na lista para a rodada seguinte
+        campaignIndex = (campaignIndex + 1) % campanhasAlvo.length;
+      } else {
+        // Exibe Tela Principal (Horários e Mapa)
+        viewPrincipal.style.opacity = '1';
+        viewAd.style.opacity = '0';
+      }
+    }, 15000); // Alterna a cada 15 segundos!
+  }
 };
