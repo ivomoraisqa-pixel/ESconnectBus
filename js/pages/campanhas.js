@@ -360,13 +360,19 @@ Pages.novaCampanha = async function() {
               </div>
             </div>
 
-            <div style="margin-bottom:20px;">
-              <label style="font-size:13px; font-weight:500; display:block; margin-bottom:6px; color:#374151;">Tipo de Mídia</label>
-              <select id="nc-tipo" required class="form-input form-select" style="width:100%; padding:10px 12px; border:1px solid #D1D5DB; border-radius:6px;">
-                <option value="imagem">Imagem Estática</option>
-                <option value="video">Vídeo</option>
-                <option value="html">HTML5 / Interativo</option>
-              </select>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:20px;">
+              <div>
+                <label style="font-size:13px; font-weight:500; display:block; margin-bottom:6px; color:#374151;">Tipo de Mídia</label>
+                <select id="nc-tipo" required class="form-input form-select" style="width:100%; padding:10px 12px; border:1px solid #D1D5DB; border-radius:6px;">
+                  <option value="imagem">Imagem Estática</option>
+                  <option value="video">Vídeo</option>
+                  <option value="html">HTML5 / Interativo</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size:13px; font-weight:500; display:block; margin-bottom:6px; color:#374151;">Valor do Anúncio (R$)</label>
+                <input id="nc-investimento" type="number" step="0.01" min="0" required class="form-input" style="width:100%; padding:10px 12px; border:1px solid #D1D5DB; border-radius:6px;" placeholder="Ex: 1500.00">
+              </div>
             </div>
 
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:20px;">
@@ -383,12 +389,26 @@ Pages.novaCampanha = async function() {
             <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:20px;">
               <div>
                 <label style="font-size:13px; font-weight:500; display:block; margin-bottom:6px; color:#374151;">Horários de Exibição</label>
-                <select id="nc-horarios" class="form-input form-select" style="width:100%; padding:10px 12px; border:1px solid #D1D5DB; border-radius:6px;">
+                <select id="nc-horarios" class="form-input form-select" style="width:100%; padding:10px 12px; border:1px solid #D1D5DB; border-radius:6px;" onchange="window.Pages.toggleCustomHours(this.value)">
                   <option value="comercial">Horário Comercial (08h - 18h)</option>
                   <option value="manha">Pico Manhã (06h - 09h)</option>
                   <option value="tarde">Pico Tarde (17h - 20h)</option>
                   <option value="integral">Integral (24h)</option>
+                  <option value="personalizado">⏰ Personalizado (Escolher Horário)</option>
                 </select>
+
+                <div id="custom-hours-container" style="display:none; margin-top:10px; padding:10px; background:#F3F4F6; border-radius:6px; border:1px dashed #3B82F6;">
+                  <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                    <div>
+                      <label style="font-size:11px; font-weight:600; color:#374151; display:block; margin-bottom:4px;">Hora de Início</label>
+                      <input type="time" id="nc-hora-inicio" value="08:00" class="form-input" style="width:100%; padding:6px; border:1px solid #D1D5DB; border-radius:4px;">
+                    </div>
+                    <div>
+                      <label style="font-size:11px; font-weight:600; color:#374151; display:block; margin-bottom:4px;">Hora de Término</label>
+                      <input type="time" id="nc-hora-fim" value="18:00" class="form-input" style="width:100%; padding:6px; border:1px solid #D1D5DB; border-radius:4px;">
+                    </div>
+                  </div>
+                </div>
               </div>
               <div>
                 <label style="font-size:13px; font-weight:500; display:block; margin-bottom:6px; color:#374151;">Tempo de Exibição (Segundos)</label>
@@ -550,8 +570,6 @@ Pages.novaCampanha = async function() {
   // Pre-fill form if editing
   if (window._editCampanhaId && window._editCampanhaData) {
     const c = window._editCampanhaData;
-    // Cliente and Prioridade are inside descricao (e.g. 'Cliente: XYZ | Prioridade: alta')
-    // But for simplicity, if they aren't parsed, we just leave them or try to parse
     let cliente = '';
     let prioridade = 'alta';
     if (c.descricao) {
@@ -559,16 +577,24 @@ Pages.novaCampanha = async function() {
        if(p[0]) cliente = p[0].replace('Cliente: ', '').trim();
        if(p[1]) prioridade = p[1].replace('Prioridade: ', '').trim();
     }
-    document.getElementById('nc-cliente').value = cliente;
-    document.getElementById('nc-nome').value = c.nome;
-    document.getElementById('nc-tipo').value = c.formato || 'imagem';
-    document.getElementById('nc-prioridade').value = prioridade;
+    if (document.getElementById('nc-cliente')) document.getElementById('nc-cliente').value = cliente;
+    if (document.getElementById('nc-nome')) document.getElementById('nc-nome').value = c.nome;
+    if (document.getElementById('nc-tipo')) document.getElementById('nc-tipo').value = c.formato || 'imagem';
+    if (document.getElementById('nc-prioridade')) document.getElementById('nc-prioridade').value = prioridade;
+    if (document.getElementById('nc-investimento')) document.getElementById('nc-investimento').value = c.investimento || 1500;
     
     if (c.totens_alvo) {
-      document.getElementById('nc-inicio').value = c.totens_alvo.data_inicio || '';
-      document.getElementById('nc-fim').value = c.totens_alvo.data_fim || '';
-      if(document.getElementById('nc-horarios')) document.getElementById('nc-horarios').value = c.totens_alvo.horarios || 'integral';
-      if(document.getElementById('nc-tempo-exibicao')) document.getElementById('nc-tempo-exibicao').value = c.totens_alvo.tempo_exibicao || 15;
+      if (document.getElementById('nc-inicio')) document.getElementById('nc-inicio').value = c.totens_alvo.data_inicio || '';
+      if (document.getElementById('nc-fim')) document.getElementById('nc-fim').value = c.totens_alvo.data_fim || '';
+      if (document.getElementById('nc-horarios')) {
+        document.getElementById('nc-horarios').value = c.totens_alvo.horarios || 'integral';
+        window.Pages.toggleCustomHours(c.totens_alvo.horarios || 'integral');
+      }
+      if (c.totens_alvo.horarios === 'personalizado') {
+        if (c.totens_alvo.hora_inicio && document.getElementById('nc-hora-inicio')) document.getElementById('nc-hora-inicio').value = c.totens_alvo.hora_inicio;
+        if (c.totens_alvo.hora_fim && document.getElementById('nc-hora-fim')) document.getElementById('nc-hora-fim').value = c.totens_alvo.hora_fim;
+      }
+      if (document.getElementById('nc-tempo-exibicao')) document.getElementById('nc-tempo-exibicao').value = c.totens_alvo.tempo_exibicao || 15;
       
       const radios = document.getElementsByName("alvo");
       for(let r of radios) {
@@ -580,8 +606,10 @@ Pages.novaCampanha = async function() {
       
       if (c.totens_alvo.tipo === 'individual' && c.totens_alvo.ids) {
         const select = document.getElementById("nc-target-list");
-        for (let opt of select.options) {
-          if (c.totens_alvo.ids.includes(opt.value)) opt.selected = true;
+        if (select) {
+          for (let opt of select.options) {
+            if (c.totens_alvo.ids.includes(opt.value)) opt.selected = true;
+          }
         }
       }
     }
@@ -596,7 +624,6 @@ Pages.salvarCampanha = async function(e) {
   btn.disabled = true;
   
   try {
-    // Coleta a seleção de alvos
     const radios = document.getElementsByName("alvo");
     let tipoAlvo = "todos";
     for(let r of radios) { if(r.checked) tipoAlvo = r.value; }
@@ -618,9 +645,11 @@ Pages.salvarCampanha = async function(e) {
     const data_inicio = document.getElementById("nc-inicio").value;
     const data_fim = document.getElementById("nc-fim").value;
     const horarios = document.getElementById("nc-horarios") ? document.getElementById("nc-horarios").value : "integral";
+    const hora_inicio = (horarios === 'personalizado' && document.getElementById("nc-hora-inicio")) ? document.getElementById("nc-hora-inicio").value : null;
+    const hora_fim = (horarios === 'personalizado' && document.getElementById("nc-hora-fim")) ? document.getElementById("nc-hora-fim").value : null;
     const tempo_exibicao = document.getElementById("nc-tempo-exibicao") ? parseInt(document.getElementById("nc-tempo-exibicao").value) : 15;
+    const investimento = document.getElementById("nc-investimento") && document.getElementById("nc-investimento").value ? parseFloat(document.getElementById("nc-investimento").value) : 1500;
 
-    // Converte datas YYYY-MM-DD para DD/MM/YYYY
     const formataData = (d) => {
        if(!d) return '';
        const partes = d.split('-');
@@ -629,19 +658,20 @@ Pages.salvarCampanha = async function(e) {
     };
     const periodoFormatado = `${formataData(data_inicio)} - ${formataData(data_fim)}`;
 
-    // Mapeamos os campos novos do frontend para as colunas originais do banco de dados 
-    // para evitar o erro de schema cache.
     const data = {
       nome: document.getElementById("nc-nome").value,
       descricao: 'Cliente: ' + document.getElementById("nc-cliente").value + ' | Prioridade: ' + document.getElementById("nc-prioridade").value,
       formato: document.getElementById("nc-tipo").value,
       periodo: periodoFormatado,
+      investimento: investimento,
       totens_alvo: { 
         tipo: tipoAlvo, 
         ids: idsAlvo, 
         data_inicio: data_inicio, 
         data_fim: data_fim, 
         horarios: horarios,
+        hora_inicio: hora_inicio,
+        hora_fim: hora_fim,
         tempo_exibicao: tempo_exibicao
       },
       status: "ativa"
@@ -735,11 +765,19 @@ Pages.toggleCampanha = async function(id, currentStatus) {
   if(confirm(msg)) {
     try {
       await window.supabase.from('campanhas').update({ status: newStatus }).eq('id', id);
-      window.Router.handleRoute(); // Force reload the page content
+      delete window._appDataCache['campanhas'];
+      window.Router.handleRoute();
     } catch(err) {
       console.error(err);
       alert('Erro ao atualizar campanha.');
     }
+  }
+};
+
+Pages.toggleCustomHours = function(val) {
+  const container = document.getElementById("custom-hours-container");
+  if (container) {
+    container.style.display = (val === "personalizado") ? "block" : "none";
   }
 };
 

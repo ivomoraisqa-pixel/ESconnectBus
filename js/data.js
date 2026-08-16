@@ -67,6 +67,12 @@ window.AppData = {
     if (alvo.horarios === 'comercial') segundosPorDia = 10 * 3600; // 10h (08h - 18h)
     else if (alvo.horarios === 'manha') segundosPorDia = 3 * 3600; // 3h (06h - 09h)
     else if (alvo.horarios === 'tarde') segundosPorDia = 3 * 3600; // 3h (17h - 20h)
+    else if (alvo.horarios === 'personalizado' && alvo.hora_inicio && alvo.hora_fim) {
+      const hIni = parseInt(alvo.hora_inicio.split(':')[0]) || 8;
+      const hFim = parseInt(alvo.hora_fim.split(':')[0]) || 18;
+      const diff = Math.max(1, hFim - hIni);
+      segundosPorDia = diff * 3600;
+    }
 
     // 3. Dias da campanha
     let dias = 30;
@@ -154,6 +160,11 @@ window.AppData = {
               if (alvo.horarios === 'comercial' && (horaAtual < 8 || horaAtual >= 18)) return false;
               if (alvo.horarios === 'manha' && (horaAtual < 6 || horaAtual >= 9)) return false;
               if (alvo.horarios === 'tarde' && (horaAtual < 17 || horaAtual >= 20)) return false;
+              if (alvo.horarios === 'personalizado' && alvo.hora_inicio && alvo.hora_fim) {
+                const hIni = parseInt(alvo.hora_inicio.split(':')[0]) || 0;
+                const hFim = parseInt(alvo.hora_fim.split(':')[0]) || 24;
+                if (horaAtual < hIni || horaAtual >= hFim) return false;
+              }
             }
             return true;
           });

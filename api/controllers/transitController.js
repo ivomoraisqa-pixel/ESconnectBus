@@ -487,7 +487,11 @@ export const syncTotem = async (req, res) => {
           if (alvo.horarios === 'comercial' && (horaAtual < 8 || horaAtual >= 18)) return false;
           if (alvo.horarios === 'manha' && (horaAtual < 6 || horaAtual >= 9)) return false;
           if (alvo.horarios === 'tarde' && (horaAtual < 17 || horaAtual >= 20)) return false;
-          // 'integral' is always true
+          if (alvo.horarios === 'personalizado' && alvo.hora_inicio && alvo.hora_fim) {
+            const hIni = parseInt(alvo.hora_inicio.split(':')[0]) || 0;
+            const hFim = parseInt(alvo.hora_fim.split(':')[0]) || 24;
+            if (horaAtual < hIni || horaAtual >= hFim) return false;
+          }
         }
         
         return true;
