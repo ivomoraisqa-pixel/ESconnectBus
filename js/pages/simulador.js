@@ -261,30 +261,29 @@ Pages.renderSimuladorTotemFrame = function(stationName, transitData, campanhasAl
     </div>
   `;
 
-  // Se houver campanhas direcionadas, inicia o Carrossel Alternado de 15 segundos
+  // Se houver campanhas direcionadas, inicia o Carrossel Alternado dinâmico
   if (campanhasAlvo.length > 0) {
     let showAd = false;
     let campaignIndex = 0;
 
-    window._simCarouselInterval = setInterval(() => {
+    const runStep = () => {
       const viewPrincipal = document.getElementById('sim-view-principal');
       const viewAd = document.getElementById('sim-view-ad');
       const mediaContent = document.getElementById('sim-ad-media-content');
 
-      if (!viewPrincipal || !viewAd) {
-        clearInterval(window._simCarouselInterval);
-        return;
-      }
+      if (!viewPrincipal || !viewAd) return;
 
       showAd = !showAd;
+      let durationSeconds = 15;
 
       if (showAd) {
         // Carrega a campanha atual da rotação
         const currentCamp = campanhasAlvo[campaignIndex];
+        durationSeconds = (currentCamp.totens_alvo && currentCamp.totens_alvo.tempo_exibicao) ? parseInt(currentCamp.totens_alvo.tempo_exibicao) : 15;
         const mediaUrl = currentCamp.totens_alvo ? currentCamp.totens_alvo.arquivo_url : null;
         
         if (mediaUrl) {
-          if (mediaUrl.indexOf('video') > -1 || mediaUrl.endsWith('.mp4')) {
+          if (mediaUrl.indexOf('video') > -1 || mediaUrl.endsWith('.mp4') || mediaUrl.startsWith('data:video/')) {
             mediaContent.innerHTML = `<video src="${mediaUrl}" autoplay loop muted style="width:100%; height:100%; object-fit:cover;"></video>`;
           } else {
             mediaContent.innerHTML = `<div style="width:100%; height:100%; background-image:url(${mediaUrl}); background-size:cover; background-position:center;"></div>`;
@@ -309,6 +308,11 @@ Pages.renderSimuladorTotemFrame = function(stationName, transitData, campanhasAl
         viewPrincipal.style.opacity = '1';
         viewAd.style.opacity = '0';
       }
-    }, 15000); // Alterna a cada 15 segundos!
+
+      window._simCarouselTimeout = setTimeout(runStep, durationSeconds * 1000);
+    };
+
+    if (window._simCarouselTimeout) clearTimeout(window._simCarouselTimeout);
+    window._simCarouselTimeout = setTimeout(runStep, 15000);
   }
 };

@@ -1476,9 +1476,20 @@ window.Pages.totens = async function() {
             <div>
               <div class="noc-section-title">${Components.icon('radio', 12)} Conteúdo Atual</div>
               <div style="display:flex; flex-direction:column; gap:8px;">
-                <div class="noc-campaign-box">
-                  <div style="font-size:10px; font-weight:700; color:#B45309; text-transform:uppercase;">Campanha Atual</div>
-                  <div style="font-size:12px; font-weight:600; color:#1F2937;">${campanhaFake.nome}</div>
+                <div class="noc-campaign-box" style="background:#FFFBEB; border:1px solid #FDE68A; padding:8px 10px; border-radius:6px;">
+                  <div style="font-size:10px; font-weight:700; color:#B45309; text-transform:uppercase; display:flex; justify-content:space-between; align-items:center;">
+                    <span>Campanhas Ativas</span>
+                    <span style="background:#F59E0B; color:white; padding:1px 6px; border-radius:10px; font-size:9px;">${campanhasAlvo.length}</span>
+                  </div>
+                  ${campanhasAlvo.length > 0 ? `
+                    <div style="margin-top:4px; display:flex; flex-direction:column; gap:3px;">
+                      ${campanhasAlvo.map(c => `
+                        <div style="font-size:11px; font-weight:600; color:#1F2937; display:flex; align-items:center; gap:4px;">
+                          <span style="color:#F59E0B;">•</span> ${c.nome}
+                        </div>
+                      `).join('')}
+                    </div>
+                  ` : `<div style="font-size:11px; color:#9CA3AF; margin-top:2px; font-style:italic;">Nenhuma campanha programada</div>`}
                 </div>
                 <div class="noc-info-box">
                   <div style="font-size:10px; font-weight:700; color:#1D4ED8; text-transform:uppercase;">Informativos</div>

@@ -501,7 +501,7 @@ export const syncTotem = async (req, res) => {
         cliente: c.descricao ? c.descricao.split('|')[0].replace('Cliente:', '').trim() : '',
         mediaUrl: (c.totens_alvo && c.totens_alvo.arquivo_url) ? c.totens_alvo.arquivo_url : null,
         type: c.formato || 'image',
-        durationSeconds: 15
+        durationSeconds: (c.totens_alvo && c.totens_alvo.tempo_exibicao) ? parseInt(c.totens_alvo.tempo_exibicao) : 15
       }));
 
       const c = todasAsCampanhas[0];

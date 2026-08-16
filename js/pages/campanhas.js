@@ -360,7 +360,7 @@ Pages.novaCampanha = async function() {
               </div>
             </div>
 
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:20px;">
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:20px;">
               <div>
                 <label style="font-size:13px; font-weight:500; display:block; margin-bottom:6px; color:#374151;">Horários de Exibição</label>
                 <select id="nc-horarios" class="form-input form-select" style="width:100%; padding:10px 12px; border:1px solid #D1D5DB; border-radius:6px;">
@@ -368,6 +368,17 @@ Pages.novaCampanha = async function() {
                   <option value="manha">Pico Manhã (06h - 09h)</option>
                   <option value="tarde">Pico Tarde (17h - 20h)</option>
                   <option value="integral">Integral (24h)</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size:13px; font-weight:500; display:block; margin-bottom:6px; color:#374151;">Tempo de Exibição (Segundos)</label>
+                <select id="nc-tempo-exibicao" class="form-input form-select" style="width:100%; padding:10px 12px; border:1px solid #D1D5DB; border-radius:6px;">
+                  <option value="5">5 Segundos (Muito Rápido)</option>
+                  <option value="10">10 Segundos</option>
+                  <option value="15" selected>15 Segundos (Padrão)</option>
+                  <option value="20">20 Segundos</option>
+                  <option value="30">30 Segundos</option>
+                  <option value="60">60 Segundos (1 min)</option>
                 </select>
               </div>
               <div>
@@ -401,7 +412,7 @@ Pages.novaCampanha = async function() {
             </div>
 
             <div style="margin-bottom:24px;">
-              <label style="font-size:13px; font-weight:500; display:block; margin-bottom:6px; color:#374151;">Upload da Mídia (1080x1920)</label>
+              <label style="font-size:13px; font-weight:500; display:block; margin-bottom:6px; color:#374151;">Upload da Mídia (1080x1920 / Imagem ou Vídeo MP4, WEBM, MOV)</label>
               <label for="nc-midia" id="nc-midia-label" style="display:block; border:2px dashed #D1D5DB; border-radius:8px; padding:32px; text-align:center; cursor:pointer; background:#F9FAFB; transition: all 0.2s;" 
                 onmouseover="this.style.borderColor='#3B82F6'" onmouseout="this.style.borderColor='#D1D5DB'"
                 ondragover="event.preventDefault(); this.style.borderColor='#3B82F6'; this.style.background='#EFF6FF';" 
@@ -409,8 +420,8 @@ Pages.novaCampanha = async function() {
                 ondrop="event.preventDefault(); this.style.borderColor='#D1D5DB'; this.style.background='#F9FAFB'; const input = document.getElementById('nc-midia'); input.files = event.dataTransfer.files; input.dispatchEvent(new Event('change'));">
                 ${window.Components ? window.Components.icon('upload-cloud', 32) : '📤'}
                 <div id="nc-midia-text" style="margin-top:12px; font-weight:500; color:#3B82F6;">Clique para selecionar ou arraste o arquivo</div>
-                <div style="font-size:12px; color:#6B7280; margin-top:4px;">Suporta JPG, PNG, GIF, MP4 até 50MB</div>
-                <input type="file" id="nc-midia" accept="image/jpeg, image/png, image/gif, video/mp4" style="width:0.1px; height:0.1px; opacity:0; overflow:hidden; position:absolute; z-index:-1;" 
+                <div style="font-size:12px; color:#6B7280; margin-top:4px;">Suporta JPG, PNG, GIF, MP4, WEBM, MOV até 50MB</div>
+                <input type="file" id="nc-midia" accept="image/*,video/*,.mp4,.webm,.mov,.mkv,.avi" style="width:0.1px; height:0.1px; opacity:0; overflow:hidden; position:absolute; z-index:-1;" 
                   onchange="window.Pages.handleMediaUpload(this)">
               </label>
             </div>
@@ -537,6 +548,7 @@ Pages.novaCampanha = async function() {
       document.getElementById('nc-inicio').value = c.totens_alvo.data_inicio || '';
       document.getElementById('nc-fim').value = c.totens_alvo.data_fim || '';
       if(document.getElementById('nc-horarios')) document.getElementById('nc-horarios').value = c.totens_alvo.horarios || 'integral';
+      if(document.getElementById('nc-tempo-exibicao')) document.getElementById('nc-tempo-exibicao').value = c.totens_alvo.tempo_exibicao || 15;
       
       const radios = document.getElementsByName("alvo");
       for(let r of radios) {
@@ -586,6 +598,8 @@ Pages.salvarCampanha = async function(e) {
     const data_inicio = document.getElementById("nc-inicio").value;
     const data_fim = document.getElementById("nc-fim").value;
     const horarios = document.getElementById("nc-horarios") ? document.getElementById("nc-horarios").value : "integral";
+    const tempo_exibicao = document.getElementById("nc-tempo-exibicao") ? parseInt(document.getElementById("nc-tempo-exibicao").value) : 15;
+
     // Converte datas YYYY-MM-DD para DD/MM/YYYY
     const formataData = (d) => {
        if(!d) return '';
@@ -607,7 +621,8 @@ Pages.salvarCampanha = async function(e) {
         ids: idsAlvo, 
         data_inicio: data_inicio, 
         data_fim: data_fim, 
-        horarios: horarios 
+        horarios: horarios,
+        tempo_exibicao: tempo_exibicao
       },
       status: "ativa"
     };
@@ -653,12 +668,18 @@ Pages.handleMediaUpload = function(input) {
   
   document.getElementById('nc-midia-text').innerText = file.name;
   
+  const isVideo = file.type.startsWith('video/') || /\.(mp4|webm|mov|mkv|avi)$/i.test(file.name);
+  const tipoSelect = document.getElementById('nc-tipo');
+  if (tipoSelect) {
+    tipoSelect.value = isVideo ? 'video' : 'imagem';
+  }
+
   const adView = document.getElementById('preview-view-ad');
   if (adView) {
     const fileURL = URL.createObjectURL(file);
-    if (file.type.startsWith('video/')) {
+    if (isVideo) {
       adView.innerHTML = `<video src="${fileURL}" autoplay loop muted style="width:100%; height:100%; object-fit:cover;"></video>`;
-    } else if (file.type.startsWith('image/')) {
+    } else {
       adView.innerHTML = `<div style="width:100%; height:100%; background-image:url(${fileURL}); background-size:cover; background-position:center;"></div>`;
     }
   }
@@ -667,6 +688,10 @@ Pages.handleMediaUpload = function(input) {
   const reader = new FileReader();
   reader.onload = function(e) {
     window._campanhaMediaBase64 = e.target.result;
+  };
+  reader.onerror = function(err) {
+    console.error('Erro ao ler arquivo de mídia:', err);
+    alert('Erro ao carregar o arquivo de vídeo. Verifique se o arquivo não está corrompido.');
   };
   reader.readAsDataURL(file);
 };
