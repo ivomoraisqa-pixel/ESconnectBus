@@ -518,12 +518,41 @@ Pages.novaCampanha = async function() {
 
   // Pre-fill form if editing
   if (window._editCampanhaId && window._editCampanhaData) {
-    document.getElementById('nc-cliente').value = window._editCampanhaData.cliente;
-    document.getElementById('nc-nome').value = window._editCampanhaData.nome;
-    document.getElementById('nc-tipo').value = window._editCampanhaData.tipo;
-    document.getElementById('nc-inicio').value = window._editCampanhaData.data_inicio;
-    document.getElementById('nc-fim').value = window._editCampanhaData.data_fim;
-    document.getElementById('nc-prioridade').value = window._editCampanhaData.prioridade;
+    const c = window._editCampanhaData;
+    // Cliente and Prioridade are inside descricao (e.g. 'Cliente: XYZ | Prioridade: alta')
+    // But for simplicity, if they aren't parsed, we just leave them or try to parse
+    let cliente = '';
+    let prioridade = 'alta';
+    if (c.descricao) {
+       const p = c.descricao.split('|');
+       if(p[0]) cliente = p[0].replace('Cliente: ', '').trim();
+       if(p[1]) prioridade = p[1].replace('Prioridade: ', '').trim();
+    }
+    document.getElementById('nc-cliente').value = cliente;
+    document.getElementById('nc-nome').value = c.nome;
+    document.getElementById('nc-tipo').value = c.formato || 'imagem';
+    document.getElementById('nc-prioridade').value = prioridade;
+    
+    if (c.totens_alvo) {
+      document.getElementById('nc-inicio').value = c.totens_alvo.data_inicio || '';
+      document.getElementById('nc-fim').value = c.totens_alvo.data_fim || '';
+      if(document.getElementById('nc-horarios')) document.getElementById('nc-horarios').value = c.totens_alvo.horarios || 'integral';
+      
+      const radios = document.getElementsByName("alvo");
+      for(let r of radios) {
+        if(r.value === c.totens_alvo.tipo) {
+           r.checked = true;
+           window.Pages.toggleTargetDropdown(r.value);
+        }
+      }
+      
+      if (c.totens_alvo.tipo === 'individual' && c.totens_alvo.ids) {
+        const select = document.getElementById("nc-target-list");
+        for (let opt of select.options) {
+          if (c.totens_alvo.ids.includes(opt.value)) opt.selected = true;
+        }
+      }
+    }
   }
 };
 

@@ -650,28 +650,48 @@ window.TotensController = {
 
     const campanhas = await window.AppData.getCampanhasAtivas();
     // Filtra campanhas alvo exatamente como a API faz
+    const agora = new Date();
+    const horaAtual = agora.getHours();
+    const hojeStr = agora.toISOString().split('T')[0];
+
     const campanhasAlvo = campanhas.filter(c => {
-      if (!c.totens_alvo) return true;
-      if (c.totens_alvo.tipo === 'todos') return true;
-      if (c.totens_alvo.tipo === 'individual' && c.totens_alvo.ids && c.totens_alvo.ids.includes(totem.id.toString())) return true;
-      return false;
+      if (!c.totens_alvo) return false;
+      const alvo = c.totens_alvo;
+
+      // 1. Verifica alvo
+      const isTarget = (alvo.tipo === 'todos') || (alvo.tipo === 'individual' && Array.isArray(alvo.ids) && (alvo.ids.includes(totem.id.toString()) || alvo.ids.includes(parseInt(totem.id))));
+      if (!isTarget) return false;
+
+      // 2. Verifica datas
+      if (alvo.data_inicio && hojeStr < alvo.data_inicio) return false;
+      if (alvo.data_fim && hojeStr > alvo.data_fim) return false;
+
+      // 3. Verifica horários
+      if (alvo.horarios) {
+        if (alvo.horarios === 'comercial' && (horaAtual < 8 || horaAtual >= 18)) return false;
+        if (alvo.horarios === 'manha' && (horaAtual < 6 || horaAtual >= 9)) return false;
+        if (alvo.horarios === 'tarde' && (horaAtual < 17 || horaAtual >= 20)) return false;
+      }
+      return true;
     });
 
-    const activeCampanha = campanhasAlvo.length > 0 ? campanhasAlvo[0] : null;
+    const activeCampanha = campanhasAlvo.length > 0 ? campanhasAlvo[Math.floor(Math.random() * campanhasAlvo.length)] : null;
     
     const adView = document.getElementById('totem-detalhe-ad');
     const mapView = document.getElementById('totem-detalhe-mapa');
     
     if (activeCampanha) {
       document.getElementById('totem-detalhe-ad-title').textContent = activeCampanha.nome || 'PUBLICIDADE';
-      document.getElementById('totem-detalhe-ad-client').textContent = activeCampanha.cliente || '';
+      const clienteNome = activeCampanha.descricao ? activeCampanha.descricao.split('|')[0].replace('Cliente:', '').trim() : '';
+      document.getElementById('totem-detalhe-ad-client').textContent = clienteNome;
       
       const mediaContainer = document.getElementById('totem-detalhe-ad-media');
-      if (mediaContainer && activeCampanha.arquivo_url) {
-        if (activeCampanha.arquivo_url.indexOf('video') > -1 || activeCampanha.arquivo_url.endsWith('.mp4')) {
-          mediaContainer.innerHTML = `<video src="${activeCampanha.arquivo_url}" autoplay loop muted style="width:100%; height:100%; object-fit:cover;"></video>`;
+      const arquivoUrl = activeCampanha.totens_alvo ? activeCampanha.totens_alvo.arquivo_url : null;
+      if (mediaContainer && arquivoUrl) {
+        if (arquivoUrl.indexOf('video') > -1 || arquivoUrl.endsWith('.mp4')) {
+          mediaContainer.innerHTML = `<video src="${arquivoUrl}" autoplay loop muted style="width:100%; height:100%; object-fit:cover;"></video>`;
         } else {
-          mediaContainer.innerHTML = `<img src="${activeCampanha.arquivo_url}" style="width:100%; height:100%; object-fit:cover;" />`;
+          mediaContainer.innerHTML = `<img src="${arquivoUrl}" style="width:100%; height:100%; object-fit:cover;" />`;
         }
       }
     } else {

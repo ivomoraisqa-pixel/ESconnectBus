@@ -132,7 +132,36 @@ Pages.iniciarSimulador = async function() {
       statusBar.style.color = '#065F46';
     }
 
-    Pages.renderSimuladorTotemFrame(stationName, transitData);
+    // Fetch Active Campaigns to simulate the real behavior
+    const campanhasGlobais = await window.AppData.getCampanhasAtivas();
+    const agora = new Date();
+    const horaAtual = agora.getHours();
+    const hojeStr = agora.toISOString().split('T')[0];
+
+    const campanhasAlvo = campanhasGlobais.filter(c => {
+      if (!c.totens_alvo) return false;
+      const alvo = c.totens_alvo;
+
+      // 1. Verifica alvo
+      const isTarget = (alvo.tipo === 'todos') || (alvo.tipo === 'individual' && Array.isArray(alvo.ids) && (totemId && (alvo.ids.includes(totemId.toString()) || alvo.ids.includes(parseInt(totemId)))));
+      if (!isTarget) return false;
+
+      // 2. Verifica datas
+      if (alvo.data_inicio && hojeStr < alvo.data_inicio) return false;
+      if (alvo.data_fim && hojeStr > alvo.data_fim) return false;
+
+      // 3. Verifica horários
+      if (alvo.horarios) {
+        if (alvo.horarios === 'comercial' && (horaAtual < 8 || horaAtual >= 18)) return false;
+        if (alvo.horarios === 'manha' && (horaAtual < 6 || horaAtual >= 9)) return false;
+        if (alvo.horarios === 'tarde' && (horaAtual < 17 || horaAtual >= 20)) return false;
+      }
+      return true;
+    });
+
+    const activeCampanha = campanhasAlvo.length > 0 ? campanhasAlvo[Math.floor(Math.random() * campanhasAlvo.length)] : null;
+
+    Pages.renderSimuladorTotemFrame(stationName, transitData, activeCampanha);
 
     // Auto-atualização a cada 30s
     if (window._simInterval) clearInterval(window._simInterval);
@@ -147,7 +176,7 @@ Pages.iniciarSimulador = async function() {
   }
 };
 
-Pages.renderSimuladorTotemFrame = function(stationName, transitData) {
+Pages.renderSimuladorTotemFrame = function(stationName, transitData, activeCampanha) {
   const container = document.getElementById('simulador-container');
   if (!container) return;
 
@@ -180,6 +209,24 @@ Pages.renderSimuladorTotemFrame = function(stationName, transitData) {
           </div>`;
       }).join('');
 
+  let adHtml = '';
+  if (activeCampanha && activeCampanha.totens_alvo && activeCampanha.totens_alvo.arquivo_url) {
+    const url = activeCampanha.totens_alvo.arquivo_url;
+    if (url.indexOf('video') > -1 || url.endsWith('.mp4')) {
+      adHtml = `<video src="${url}" autoplay loop muted style="position:absolute; width:100%; height:100%; object-fit:cover;"></video>`;
+    } else {
+      adHtml = `<div style="position:absolute; inset:0; background-image:url(${url}); background-size:cover; background-position:center;"></div>`;
+    }
+  } else {
+    adHtml = `
+      <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg, #1E3A8A, #3B82F6); color:white; flex-direction:column;">
+        <div style="font-size:80px; margin-bottom:30px;">🚌</div>
+        <div style="font-size:60px; font-weight:800; margin-bottom:16px; text-align:center;">TRANSPORTE INTELIGENTE</div>
+        <div style="font-size:36px; font-weight:500;">Prefeitura da Serra</div>
+      </div>
+    `;
+  }
+
   container.innerHTML = `
     <!-- Frame do Totem Físico 1080×1920 (scale 0.35) -->
     <div style="width:1080px; height:1920px; transform:scale(0.35); transform-origin:center top; background:#1A1A2E; overflow:hidden; font-family:'Inter', sans-serif; color:white; border:32px solid #111; border-radius:72px; box-sizing:border-box; display:flex; flex-direction:column; box-shadow:0 40px 100px rgba(0,0,0,0.5), inset 0 0 20px rgba(0,0,0,0.5);">
@@ -210,11 +257,7 @@ Pages.renderSimuladorTotemFrame = function(stationName, transitData) {
 
         <!-- Área de publicidade -->
         <div style="height:580px; background:#000; position:relative; overflow:hidden; flex-shrink:0;">
-          <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg, #1E3A8A, #3B82F6); color:white; flex-direction:column;">
-            <div style="font-size:80px; margin-bottom:30px;">🚌</div>
-            <div style="font-size:60px; font-weight:800; margin-bottom:16px; text-align:center;">TRANSPORTE INTELIGENTE</div>
-            <div style="font-size:36px; font-weight:500;">Prefeitura da Serra</div>
-          </div>
+          ${adHtml}
         </div>
       </div>
 

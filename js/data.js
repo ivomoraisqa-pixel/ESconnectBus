@@ -1,11 +1,19 @@
+window._appDataCache = {};
+const CACHE_TTL = 30000; // 30 seconds
+
 window.AppData = {
   // Helper API Genérica para queries simples
-  async fetchAll(table) {
+  async fetchAll(table, force = false) {
+    const now = Date.now();
+    if (!force && window._appDataCache[table] && (now - window._appDataCache[table].time < CACHE_TTL)) {
+      return window._appDataCache[table].data;
+    }
     const { data, error } = await window.supabase.from(table).select('*').order('created_at', { ascending: false });
     if (error) {
       console.error(`Erro ao carregar ${table}:`, error);
       return [];
     }
+    window._appDataCache[table] = { time: now, data: data };
     return data;
   },
 
@@ -255,9 +263,15 @@ window.AppData = {
   // ═══════════════════════════════════════════════════
 
   /** Lista todas as estações (bus_stops) */
-  async getBusStops() {
+  async getBusStops(force = false) {
+    const table = 'bus_stops';
+    const now = Date.now();
+    if (!force && window._appDataCache[table] && (now - window._appDataCache[table].time < CACHE_TTL)) {
+      return window._appDataCache[table].data;
+    }
     const { data, error } = await window.supabase.from('bus_stops').select('*').eq('active', true).order('name').limit(5000);
     if (error) { console.error('[STATION] Erro ao buscar estações:', error); return []; }
+    window._appDataCache[table] = { time: now, data: data };
     return data || [];
   },
 
@@ -269,13 +283,19 @@ window.AppData = {
   },
 
   /** Retorna as linhas vinculadas a uma estação via stop_routes */
-  async getRoutesByStop(stopId) {
+  async getRoutesByStop(stopId, force = false) {
+    const cacheKey = 'stop_routes_' + stopId;
+    const now = Date.now();
+    if (!force && window._appDataCache[cacheKey] && (now - window._appDataCache[cacheKey].time < CACHE_TTL)) {
+      return window._appDataCache[cacheKey].data;
+    }
     const { data, error } = await window.supabase
       .from('stop_routes')
       .select('route_id, direction, stop_sequence, routes(route_id, codigo, nome, route_color, route_short_name)')
       .eq('stop_id', stopId)
       .eq('active', true);
     if (error) { console.error('[ROUTE] Erro ao buscar linhas da estação:', error); return []; }
+    window._appDataCache[cacheKey] = { time: now, data: data || [] };
     return data || [];
   },
 
