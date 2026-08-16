@@ -1381,7 +1381,32 @@ window.Pages.totens = async function() {
     const dataStr = totem.ultima_conexao ? new Date(totem.ultima_conexao).toLocaleTimeString('pt-BR') : 'Agora';
     const tData = encodeURIComponent(JSON.stringify(totem)).replace(/'/g, "%27");
 
-    const campanhaFake = campanhasAtivas.length > 0 ? campanhasAtivas[Math.floor(Math.random() * campanhasAtivas.length)] : { nome: 'PREFEITURA DA SERRA', cliente: 'CAMPANHA EDUCATIVA' };
+    const agora = new Date();
+    const horaAtual = agora.getHours();
+    const hojeStr = agora.toISOString().split('T')[0];
+
+    const campanhasAlvo = campanhasAtivas.filter(c => {
+      if (!c.totens_alvo) return false;
+      const alvo = c.totens_alvo;
+
+      // 1. Verifica alvo
+      const isTarget = (alvo.tipo === 'todos') || (alvo.tipo === 'individual' && Array.isArray(alvo.ids) && (alvo.ids.includes(totem.id.toString()) || alvo.ids.includes(parseInt(totem.id))));
+      if (!isTarget) return false;
+
+      // 2. Verifica datas
+      if (alvo.data_inicio && hojeStr < alvo.data_inicio) return false;
+      if (alvo.data_fim && hojeStr > alvo.data_fim) return false;
+
+      // 3. Verifica horários
+      if (alvo.horarios) {
+        if (alvo.horarios === 'comercial' && (horaAtual < 8 || horaAtual >= 18)) return false;
+        if (alvo.horarios === 'manha' && (horaAtual < 6 || horaAtual >= 9)) return false;
+        if (alvo.horarios === 'tarde' && (horaAtual < 17 || horaAtual >= 20)) return false;
+      }
+      return true;
+    });
+
+    const campanhaFake = campanhasAlvo.length > 0 ? campanhasAlvo[Math.floor(Math.random() * campanhasAlvo.length)] : { nome: 'SEM CAMPANHA', cliente: 'PREFEITURA DA SERRA' };
 
     return `
       <div class="noc-card" onclick="window.TotensController.openDetalhesModal('${tData}')" style="cursor: pointer;">
