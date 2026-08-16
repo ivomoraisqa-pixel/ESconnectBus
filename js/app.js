@@ -33,5 +33,8 @@
   // Initialize
   document.addEventListener('DOMContentLoaded', () => {
     window.Router.init();
+    if (window.AppData && window.AppData.startBackgroundPlaybackEngine) {
+      window.AppData.startBackgroundPlaybackEngine();
+    }
   });
 })();

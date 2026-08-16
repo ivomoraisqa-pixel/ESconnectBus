@@ -40,23 +40,21 @@ Pages.campanhas = async function() {
               <button class="btn btn-secondary" style="padding:8px 12px;border:1px solid #D1D5DB;border-radius:6px;background:white;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px;">${Components.icon('filter', 16)} Filtros</button>
             </div>
             <!-- Table -->
-            <div style="overflow-x:auto;">
               <table class="data-table" style="width:100%;border-collapse:collapse;text-align:left;font-size:13px;">
                 <thead>
-                  <tr style="border-bottom:1px solid #E5E7EB;color:#6B7280;">
-                    <th style="padding:12px 20px;font-weight:500;">Campanha</th>
-                    <th style="padding:12px 20px;font-weight:500;">Período</th>
-                    <th style="padding:12px 20px;font-weight:500;">Totens</th>
-                    <th style="padding:12px 20px;font-weight:500;">Anúncios</th>
-                    <th style="padding:12px 20px;font-weight:500;">Exibições</th>
-                    <th style="padding:12px 20px;font-weight:500;">CTR</th>
-                    <th style="padding:12px 20px;font-weight:500;">Status</th>
-                    <th style="padding:12px 20px;font-weight:500;">Ações</th>
+                  <tr style="border-bottom:1px solid #E5E7EB;color:#6B7280;background:#F9FAFB;">
+                    <th style="padding:12px 20px;font-weight:600;">Campanha</th>
+                    <th style="padding:12px 20px;font-weight:600;">Período / Rotação</th>
+                    <th style="padding:12px 20px;font-weight:600;">Totens Alvo</th>
+                    <th style="padding:12px 20px;font-weight:600;">Progresso / Meta</th>
+                    <th style="padding:12px 20px;font-weight:600;color:#2563EB;">Exibições Real-Time</th>
+                    <th style="padding:12px 20px;font-weight:600;color:#059669;">Estimativa Total (Fim)</th>
+                    <th style="padding:12px 20px;font-weight:600;">Investimento</th>
+                    <th style="padding:12px 20px;font-weight:600;">Ações</th>
                   </tr>
                 </thead>
                 <tbody id="campanhas-tbody"></tbody>
               </table>
-            </div>
             <!-- Pagination -->
             <div style="padding:16px 20px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid #E5E7EB;">
               <span style="font-size:13px;color:#6B7280;">Mostrando 1 a ${Math.min(5, campanhas.length)} de ${campanhas.length} campanhas</span>
@@ -169,6 +167,17 @@ Pages.campanhas = async function() {
   
   // Render totem mini preview
   Pages.renderTotemPreview();
+
+  if (window.Pages.campanhasInterval) clearInterval(window.Pages.campanhasInterval);
+  window.Pages.campanhasInterval = setInterval(async () => {
+    if (window.Router.currentPage === 'campanhas') {
+      const freshCampanhas = await window.AppData.getCampanhas(true);
+      window._campanhasList = freshCampanhas;
+      Pages.renderCampanhasTable(freshCampanhas);
+    } else {
+      clearInterval(window.Pages.campanhasInterval);
+    }
+  }, 3000);
 };
 
 Pages.renderCampanhasTable = function(campanhas) {

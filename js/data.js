@@ -101,6 +101,56 @@ window.AppData = {
     const totalEstimado = Math.round(numTotens * insercoesPorDiaPorTotem * dias);
     return totalEstimado;
   },
+  startBackgroundPlaybackEngine() {
+    if (window._bgPlaybackEngineStarted) return;
+    window._bgPlaybackEngineStarted = true;
+
+    setInterval(async () => {
+      try {
+        const [totens, campanhasAtivas] = await Promise.all([
+          this.getOnlineTotens(),
+          this.getCampanhasAtivas()
+        ]);
+
+        if (!totens || totens.length === 0 || !campanhasAtivas || campanhasAtivas.length === 0) return;
+
+        const agora = new Date();
+        const horaAtual = agora.getHours();
+        const hojeStr = agora.toISOString().split('T')[0];
+
+        // Para cada totem online, seleciona campanha direcionada ativa para simular reprodução
+        for (const totem of totens) {
+          const campanhasAlvo = campanhasAtivas.filter(c => {
+            if (!c.totens_alvo) return false;
+            const alvo = c.totens_alvo;
+
+            const isTarget = (alvo.tipo === 'todos') || (alvo.tipo === 'individual' && Array.isArray(alvo.ids) && (alvo.ids.includes(totem.id.toString()) || alvo.ids.includes(parseInt(totem.id))));
+            if (!isTarget) return false;
+
+            if (alvo.data_inicio && hojeStr < alvo.data_inicio) return false;
+            if (alvo.data_fim && hojeStr > alvo.data_fim) return false;
+
+            if (alvo.horarios) {
+              if (alvo.horarios === 'comercial' && (horaAtual < 8 || horaAtual >= 18)) return false;
+              if (alvo.horarios === 'manha' && (horaAtual < 6 || horaAtual >= 9)) return false;
+              if (alvo.horarios === 'tarde' && (horaAtual < 17 || horaAtual >= 20)) return false;
+            }
+            return true;
+          });
+
+          if (campanhasAlvo.length > 0) {
+            const cItem = campanhasAlvo[Math.floor(Math.random() * campanhasAlvo.length)];
+            await this.incrementExibicoes(cItem.id);
+          }
+        }
+
+        // Invalida cache local de campanhas para que as telas leiam dados atualizados
+        delete window._appDataCache['campanhas'];
+      } catch (err) {
+        console.warn('[BG-ENGINE] Aviso no motor de exibição:', err);
+      }
+    }, 4000);
+  },
   async getCampanhasByStatus(s) { 
     if(s === 'todas') return this.getCampanhas();
     const { data } = await window.supabase.from('campanhas').select('*').eq('status', s);
