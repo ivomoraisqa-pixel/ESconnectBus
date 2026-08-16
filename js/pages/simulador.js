@@ -132,8 +132,14 @@ Pages.iniciarSimulador = async function() {
       statusBar.style.color = '#065F46';
     }
 
-    // Fetch Active Campaigns to simulate the real behavior
-    const campanhasGlobais = await window.AppData.getCampanhasAtivas();
+    // Fetch Active Campaigns & Informativos to simulate real behavior
+    const [campanhasGlobais, informativosFull] = await Promise.all([
+      window.AppData.getCampanhasAtivas ? window.AppData.getCampanhasAtivas() : [],
+      window.AppData.getInformativos ? window.AppData.getInformativos() : []
+    ]);
+
+    const informativosAlvo = (informativosFull || []).filter(i => i.titulo && i.status !== 'pausado');
+
     const agora = new Date();
     const horaAtual = agora.getHours();
     const hojeStr = agora.toISOString().split('T')[0];
@@ -159,7 +165,7 @@ Pages.iniciarSimulador = async function() {
       return true;
     });
 
-    Pages.renderSimuladorTotemFrame(stationName, transitData, campanhasAlvo);
+    Pages.renderSimuladorTotemFrame(stationName, transitData, campanhasAlvo, informativosAlvo);
 
     // Auto-atualização de trânsito a cada 60s
     if (window._simInterval) clearInterval(window._simInterval);
@@ -174,7 +180,7 @@ Pages.iniciarSimulador = async function() {
   }
 };
 
-Pages.renderSimuladorTotemFrame = function(stationName, transitData, campanhasAlvo = []) {
+Pages.renderSimuladorTotemFrame = function(stationName, transitData, campanhasAlvo = [], informativosAlvo = []) {
   const container = document.getElementById('simulador-container');
   if (!container) return;
 
@@ -186,6 +192,8 @@ Pages.renderSimuladorTotemFrame = function(stationName, transitData, campanhasAl
   const now = new Date();
   const timeStr = now.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
   const dateStr = now.toLocaleDateString('pt-BR', { weekday:'long', day:'2-digit', month:'long', year:'numeric' });
+
+  const initialInfo = informativosAlvo.length > 0 ? informativosAlvo[0] : { titulo: 'Prefeitura da Serra', mensagem: 'Cidade Inteligente & Sustentável' };
 
   // Monta lista de ônibus — APENAS os vinculados à estação
   const busRows = lines.length === 0
@@ -213,7 +221,7 @@ Pages.renderSimuladorTotemFrame = function(stationName, transitData, campanhasAl
     <!-- Frame do Totem Físico 1080×1920 (scale 0.35) -->
     <div style="width:1080px; height:1920px; transform:scale(0.35); transform-origin:center top; background:#1A1A2E; overflow:hidden; font-family:'Inter', sans-serif; color:white; border:32px solid #111; border-radius:72px; box-sizing:border-box; display:flex; flex-direction:column; box-shadow:0 40px 100px rgba(0,0,0,0.5), inset 0 0 20px rgba(0,0,0,0.5); position:relative;">
 
-      <!-- VIEW 1: PAINEL PRINCIPAL (HORÁRIOS E MAPA) -->
+      <!-- VIEW 1: PAINEL PRINCIPAL (HORÁRIOS, MAPA E INFORMATIVOS) -->
       <div id="sim-view-principal" style="position:absolute; inset:0; display:flex; flex-direction:column; background:#1A1A2E; transition:opacity 0.5s ease-in-out; opacity:1; z-index:1;">
         <!-- Topo -->
         <div style="display:flex; justify-content:space-between; align-items:center; padding:32px 40px; background:#1A1A2E; flex-shrink:0;">
@@ -239,8 +247,14 @@ Pages.renderSimuladorTotemFrame = function(stationName, transitData, campanhasAl
             ${busRows}
           </div>
 
+          <!-- Banner Rotativo de Informativos da Prefeitura -->
+          <div id="sim-info-banner-bar" style="background:#1E3A8A; color:white; padding:18px 40px; display:flex; align-items:center; justify-content:space-between; font-size:24px; flex-shrink:0; border-top:4px solid #3B82F6;">
+            <span id="sim-info-banner-title" style="font-weight:700; color:#F59E0B;">📢 INFORMATIVO: ${initialInfo.titulo}</span>
+            <span id="sim-info-banner-text" style="font-weight:500; opacity:0.9;">${initialInfo.mensagem || initialInfo.msg || 'Cidade Inteligente'}</span>
+          </div>
+
           <!-- Rodapé de Trânsito / Mini Mapa -->
-          <div style="height:480px; background:#E5E7EB; border-top:4px solid #D1D5DB; display:flex; align-items:center; justify-content:center; color:#6B7280; font-size:32px; font-weight:700; flex-shrink:0;">
+          <div style="height:400px; background:#E5E7EB; border-top:4px solid #D1D5DB; display:flex; align-items:center; justify-content:center; color:#6B7280; font-size:30px; font-weight:700; flex-shrink:0;">
             🗺️ MAPA DE LINHAS & ITINERÁRIOS EM TEMPO REAL
           </div>
         </div>
@@ -265,6 +279,7 @@ Pages.renderSimuladorTotemFrame = function(stationName, transitData, campanhasAl
   if (campanhasAlvo.length > 0) {
     let showAd = false;
     let campaignIndex = 0;
+    let infoIndex = 0;
 
     const runStep = () => {
       const viewPrincipal = document.getElementById('sim-view-principal');
@@ -304,9 +319,21 @@ Pages.renderSimuladorTotemFrame = function(stationName, transitData, campanhasAl
         // Avança para a próxima campanha na lista para a rodada seguinte
         campaignIndex = (campaignIndex + 1) % campanhasAlvo.length;
       } else {
-        // Exibe Tela Principal (Horários e Mapa)
+        // Exibe Tela Principal (Horários, Mapa e Informativos)
         viewPrincipal.style.opacity = '1';
         viewAd.style.opacity = '0';
+
+        // Rotaciona para o próximo informativo na volta ao painel principal
+        if (informativosAlvo.length > 0) {
+          infoIndex = (infoIndex + 1) % informativosAlvo.length;
+          const currentInfo = informativosAlvo[infoIndex];
+          const infoTitleEl = document.getElementById('sim-info-banner-title');
+          const infoTextEl = document.getElementById('sim-info-banner-text');
+          if (infoTitleEl && currentInfo) {
+            infoTitleEl.textContent = `📢 INFORMATIVO: ${currentInfo.titulo}`;
+            if (infoTextEl) infoTextEl.textContent = currentInfo.mensagem || currentInfo.msg || 'Prefeitura da Serra';
+          }
+        }
       }
 
       window._simCarouselTimeout = setTimeout(runStep, durationSeconds * 1000);

@@ -1381,7 +1381,12 @@ window.Pages.totens = async function() {
 
 
 
-  const campanhasAtivas = (await window.AppData.getCampanhasAtivas()) || [];
+  const [campanhasAtivas, informativosFull] = await Promise.all([
+    window.AppData.getCampanhasAtivas ? window.AppData.getCampanhasAtivas() : [],
+    window.AppData.getInformativos ? window.AppData.getInformativos() : []
+  ]);
+
+  const informativosList = (informativosFull || []).filter(i => i.titulo && i.status !== 'pausado');
 
   const cardsHTML = totensList.map(totem => {
     let dotClass = 'offline';
@@ -1396,7 +1401,7 @@ window.Pages.totens = async function() {
     const horaAtual = agora.getHours();
     const hojeStr = agora.toISOString().split('T')[0];
 
-    const campanhasAlvo = campanhasAtivas.filter(c => {
+    const campanhasAlvo = (campanhasAtivas || []).filter(c => {
       if (!c.totens_alvo) return false;
       const alvo = c.totens_alvo;
 
@@ -1414,6 +1419,12 @@ window.Pages.totens = async function() {
         if (alvo.horarios === 'manha' && (horaAtual < 6 || horaAtual >= 9)) return false;
         if (alvo.horarios === 'tarde' && (horaAtual < 17 || horaAtual >= 20)) return false;
       }
+      return true;
+    });
+
+    const informativosAlvo = informativosList.filter(info => {
+      if (!info.totens_alvo || info.totens_alvo.includes('Todos')) return true;
+      if (totem.localizacao && info.totens_alvo.includes(totem.localizacao)) return true;
       return true;
     });
 
@@ -1491,9 +1502,20 @@ window.Pages.totens = async function() {
                     </div>
                   ` : `<div style="font-size:11px; color:#9CA3AF; margin-top:2px; font-style:italic;">Nenhuma campanha programada</div>`}
                 </div>
-                <div class="noc-info-box">
-                  <div style="font-size:10px; font-weight:700; color:#1D4ED8; text-transform:uppercase;">Informativos</div>
-                  <div style="font-size:11px; font-weight:600; color:#1E3A8A;">Vacinação • Desvios</div>
+                <div class="noc-info-box" style="background:#EFF6FF; border:1px solid #BFDBFE; padding:8px 10px; border-radius:6px;">
+                  <div style="font-size:10px; font-weight:700; color:#1D4ED8; text-transform:uppercase; display:flex; justify-content:space-between; align-items:center;">
+                    <span>Informativos Ativos</span>
+                    <span style="background:#3B82F6; color:white; padding:1px 6px; border-radius:10px; font-size:9px;">${informativosAlvo.length}</span>
+                  </div>
+                  ${informativosAlvo.length > 0 ? `
+                    <div style="margin-top:4px; display:flex; flex-direction:column; gap:3px;">
+                      ${informativosAlvo.map(info => `
+                        <div style="font-size:11px; font-weight:600; color:#1E3A8A; display:flex; align-items:center; gap:4px;">
+                          <span style="color:#3B82F6;">•</span> ${info.titulo}
+                        </div>
+                      `).join('')}
+                    </div>
+                  ` : `<div style="font-size:11px; color:#9CA3AF; margin-top:2px; font-style:italic;">Nenhum informativo ativo</div>`}
                 </div>
               </div>
             </div>
