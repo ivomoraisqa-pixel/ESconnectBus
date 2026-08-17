@@ -1,6 +1,55 @@
 window._appDataCache = {};
 const CACHE_TTL = 30000; // 30 seconds
 
+window.isCampaignActiveNow = function(c, totemId) {
+  if (!c || c.status !== 'ativa' || !c.totens_alvo) return false;
+  const alvo = c.totens_alvo;
+
+  if (totemId !== undefined && totemId !== null) {
+    const isTarget = (alvo.tipo === 'todos') || (alvo.tipo === 'individual' && Array.isArray(alvo.ids) && (alvo.ids.includes(totemId.toString()) || alvo.ids.includes(parseInt(totemId))));
+    if (!isTarget) return false;
+  }
+
+  const agora = new Date();
+  const year = agora.getFullYear();
+  const month = String(agora.getMonth() + 1).padStart(2, '0');
+  const day = String(agora.getDate()).padStart(2, '0');
+  const hojeLocal = `${year}-${month}-${day}`;
+  const horaMinAtual = agora.getHours() * 60 + agora.getMinutes();
+
+  const toMin = (tStr, def) => {
+    if (!tStr) return def;
+    const parts = tStr.split(':');
+    return parseInt(parts[0], 10) * 60 + (parts[1] ? parseInt(parts[1], 10) : 0);
+  };
+
+  if (alvo.data_inicio && hojeLocal < alvo.data_inicio) return false;
+
+  if (alvo.data_fim) {
+    if (hojeLocal > alvo.data_fim) return false;
+    if (hojeLocal === alvo.data_fim && alvo.horarios === 'personalizado' && alvo.hora_fim) {
+      const minFim = toMin(alvo.hora_fim, 1440);
+      if (horaMinAtual > minFim) return false;
+    }
+  }
+
+  if (alvo.horarios) {
+    if (alvo.horarios === 'comercial') {
+      if (horaMinAtual < (8 * 60) || horaMinAtual >= (18 * 60)) return false;
+    } else if (alvo.horarios === 'manha') {
+      if (horaMinAtual < (6 * 60) || horaMinAtual >= (9 * 60)) return false;
+    } else if (alvo.horarios === 'tarde') {
+      if (horaMinAtual < (17 * 60) || horaMinAtual >= (20 * 60)) return false;
+    } else if (alvo.horarios === 'personalizado') {
+      const minIni = toMin(alvo.hora_inicio, 0);
+      const minFim = toMin(alvo.hora_fim, 1440);
+      if (horaMinAtual < minIni || horaMinAtual > minFim) return false;
+    }
+  }
+
+  return true;
+};
+
 window.AppData = {
   // Helper API Genérica para queries simples
   async fetchAll(table, force = false) {
@@ -35,7 +84,9 @@ window.AppData = {
   async getCampanhas(force = false) { return this.fetchAll('campanhas', force); },
   async getCampanhasAtivas() { 
     const { data } = await window.supabase.from('campanhas').select('*').eq('status', 'ativa');
-    return data || []; 
+    const campanhas = data || [];
+    await this.checkExpiredCampanhas(campanhas);
+    return campanhas.filter(c => c.status === 'ativa'); 
   },
   async incrementExibicoes(campanhaId) {
     if (!campanhaId) return;
@@ -109,23 +160,39 @@ window.AppData = {
   },
   async checkExpiredCampanhas(campanhas) {
     if (!campanhas || campanhas.length === 0) return;
-    const hojeStr = new Date().toISOString().split('T')[0];
+    const agora = new Date();
+    const year = agora.getFullYear();
+    const month = String(agora.getMonth() + 1).padStart(2, '0');
+    const day = String(agora.getDate()).padStart(2, '0');
+    const hojeLocal = `${year}-${month}-${day}`;
+    const horaMinAtual = agora.getHours() * 60 + agora.getMinutes();
+
+    const toMin = (tStr, def) => {
+      if (!tStr) return def;
+      const parts = tStr.split(':');
+      return parseInt(parts[0], 10) * 60 + (parts[1] ? parseInt(parts[1], 10) : 0);
+    };
+
     for (const c of campanhas) {
-      if (c.status === 'ativa' && c.totens_alvo && c.totens_alvo.data_fim && hojeStr > c.totens_alvo.data_fim) {
-        c.status = 'encerrada';
-        try {
-          await window.supabase.from('campanhas').update({ status: 'encerrada' }).eq('id', c.id);
-        } catch(e) {
-          console.warn('[APPDATA] Erro ao encerrar campanha expirada:', e);
+      if (c.status === 'ativa' && c.totens_alvo && c.totens_alvo.data_fim) {
+        let isExpired = false;
+        if (hojeLocal > c.totens_alvo.data_fim) {
+          isExpired = true;
+        } else if (hojeLocal === c.totens_alvo.data_fim && c.totens_alvo.horarios === 'personalizado' && c.totens_alvo.hora_fim) {
+          const minFim = toMin(c.totens_alvo.hora_fim, 1440);
+          if (horaMinAtual > minFim) isExpired = true;
+        }
+
+        if (isExpired) {
+          c.status = 'encerrada';
+          try {
+            await window.supabase.from('campanhas').update({ status: 'encerrada' }).eq('id', c.id);
+          } catch(e) {
+            console.warn('[APPDATA] Erro ao encerrar campanha expirada:', e);
+          }
         }
       }
     }
-  },
-  async getCampanhasAtivas() { 
-    const { data } = await window.supabase.from('campanhas').select('*').eq('status', 'ativa');
-    const campanhas = data || [];
-    await this.checkExpiredCampanhas(campanhas);
-    return campanhas.filter(c => c.status === 'ativa'); 
   },
   startBackgroundPlaybackEngine() {
     if (window._bgPlaybackEngineStarted) return;
@@ -140,34 +207,9 @@ window.AppData = {
 
         if (!totens || totens.length === 0 || !campanhasAtivas || campanhasAtivas.length === 0) return;
 
-        const agora = new Date();
-        const horaAtual = agora.getHours();
-        const hojeStr = agora.toISOString().split('T')[0];
-
         // Para cada totem online, seleciona campanha direcionada ativa para simular reprodução
         for (const totem of totens) {
-          const campanhasAlvo = campanhasAtivas.filter(c => {
-            if (!c.totens_alvo) return false;
-            const alvo = c.totens_alvo;
-
-            const isTarget = (alvo.tipo === 'todos') || (alvo.tipo === 'individual' && Array.isArray(alvo.ids) && (alvo.ids.includes(totem.id.toString()) || alvo.ids.includes(parseInt(totem.id))));
-            if (!isTarget) return false;
-
-            if (alvo.data_inicio && hojeStr < alvo.data_inicio) return false;
-            if (alvo.data_fim && hojeStr > alvo.data_fim) return false;
-
-            if (alvo.horarios) {
-              if (alvo.horarios === 'comercial' && (horaAtual < 8 || horaAtual >= 18)) return false;
-              if (alvo.horarios === 'manha' && (horaAtual < 6 || horaAtual >= 9)) return false;
-              if (alvo.horarios === 'tarde' && (horaAtual < 17 || horaAtual >= 20)) return false;
-              if (alvo.horarios === 'personalizado' && alvo.hora_inicio && alvo.hora_fim) {
-                const hIni = parseInt(alvo.hora_inicio.split(':')[0]) || 0;
-                const hFim = parseInt(alvo.hora_fim.split(':')[0]) || 24;
-                if (horaAtual < hIni || horaAtual >= hFim) return false;
-              }
-            }
-            return true;
-          });
+          const campanhasAlvo = campanhasAtivas.filter(c => window.isCampaignActiveNow(c, totem.id));
 
           if (campanhasAlvo.length > 0) {
             const cItem = campanhasAlvo[Math.floor(Math.random() * campanhasAlvo.length)];

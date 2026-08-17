@@ -134,36 +134,14 @@ Pages.iniciarSimulador = async function() {
 
     // Fetch Active Campaigns & Informativos to simulate real behavior
     const [campanhasGlobais, informativosFull] = await Promise.all([
+    const [campanhasAtivas, informativosFull] = await Promise.all([
       window.AppData.getCampanhasAtivas ? window.AppData.getCampanhasAtivas() : [],
       window.AppData.getInformativos ? window.AppData.getInformativos() : []
     ]);
 
     const informativosAlvo = (informativosFull || []).filter(i => i.titulo && i.status !== 'pausado');
 
-    const agora = new Date();
-    const horaAtual = agora.getHours();
-    const hojeStr = agora.toISOString().split('T')[0];
-
-    const campanhasAlvo = campanhasGlobais.filter(c => {
-      if (!c.totens_alvo) return false;
-      const alvo = c.totens_alvo;
-
-      // 1. Verifica alvo
-      const isTarget = (alvo.tipo === 'todos') || (alvo.tipo === 'individual' && Array.isArray(alvo.ids) && (totemId && (alvo.ids.includes(totemId.toString()) || alvo.ids.includes(parseInt(totemId)))));
-      if (!isTarget) return false;
-
-      // 2. Verifica datas
-      if (alvo.data_inicio && hojeStr < alvo.data_inicio) return false;
-      if (alvo.data_fim && hojeStr > alvo.data_fim) return false;
-
-      // 3. Verifica horários
-      if (alvo.horarios) {
-        if (alvo.horarios === 'comercial' && (horaAtual < 8 || horaAtual >= 18)) return false;
-        if (alvo.horarios === 'manha' && (horaAtual < 6 || horaAtual >= 9)) return false;
-        if (alvo.horarios === 'tarde' && (horaAtual < 17 || horaAtual >= 20)) return false;
-      }
-      return true;
-    });
+    const campanhasAlvo = (campanhasAtivas || []).filter(c => window.isCampaignActiveNow(c, totemId));
 
     Pages.renderSimuladorTotemFrame(stationName, transitData, campanhasAlvo, informativosAlvo);
 

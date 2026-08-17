@@ -462,9 +462,20 @@ export const syncTotem = async (req, res) => {
     
     let todasAsCampanhas = [];
     const agora = new Date();
-    const horaAtual = agora.getHours();
-    // YYYY-MM-DD
-    const hojeStr = agora.toISOString().split('T')[0];
+    const optionsDate = { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit' };
+    const dateFormatter = new Intl.DateTimeFormat('en-CA', optionsDate);
+    const hojeStr = dateFormatter.format(agora);
+
+    const optionsTime = { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit', hour12: false };
+    const timeStr = new Intl.DateTimeFormat('pt-BR', optionsTime).format(agora);
+    const timeParts = timeStr.split(':');
+    const horaMinAtual = parseInt(timeParts[0], 10) * 60 + parseInt(timeParts[1], 10);
+
+    const toMin = (tStr, def) => {
+      if (!tStr) return def;
+      const parts = tStr.split(':');
+      return parseInt(parts[0], 10) * 60 + (parts[1] ? parseInt(parts[1], 10) : 0);
+    };
     
     if (campanhasGlobais) {
       todasAsCampanhas = campanhasGlobais.filter(c => {
@@ -476,21 +487,31 @@ export const syncTotem = async (req, res) => {
         
         // 2. Verifica as Datas
         if (alvo.data_inicio && hojeStr < alvo.data_inicio) return false;
-        if (alvo.data_fim && hojeStr > alvo.data_fim) {
-          // Atualiza status para encerrada de forma assíncrona
-          supabase.from('campanhas').update({ status: 'encerrada' }).eq('id', c.id).then(()=>{}).catch(()=>{});
-          return false;
+        
+        if (alvo.data_fim) {
+          let isExpired = false;
+          if (hojeStr > alvo.data_fim) {
+            isExpired = true;
+          } else if (hojeStr === alvo.data_fim && alvo.horarios === 'personalizado' && alvo.hora_fim) {
+            const minFim = toMin(alvo.hora_fim, 1440);
+            if (horaMinAtual > minFim) isExpired = true;
+          }
+
+          if (isExpired) {
+            supabase.from('campanhas').update({ status: 'encerrada' }).eq('id', c.id).then(()=>{}).catch(()=>{});
+            return false;
+          }
         }
         
         // 3. Verifica o Horário
         if (alvo.horarios) {
-          if (alvo.horarios === 'comercial' && (horaAtual < 8 || horaAtual >= 18)) return false;
-          if (alvo.horarios === 'manha' && (horaAtual < 6 || horaAtual >= 9)) return false;
-          if (alvo.horarios === 'tarde' && (horaAtual < 17 || horaAtual >= 20)) return false;
-          if (alvo.horarios === 'personalizado' && alvo.hora_inicio && alvo.hora_fim) {
-            const hIni = parseInt(alvo.hora_inicio.split(':')[0]) || 0;
-            const hFim = parseInt(alvo.hora_fim.split(':')[0]) || 24;
-            if (horaAtual < hIni || horaAtual >= hFim) return false;
+          if (alvo.horarios === 'comercial' && (horaMinAtual < (8*60) || horaMinAtual >= (18*60))) return false;
+          if (alvo.horarios === 'manha' && (horaMinAtual < (6*60) || horaMinAtual >= (9*60))) return false;
+          if (alvo.horarios === 'tarde' && (horaMinAtual < (17*60) || horaMinAtual >= (20*60))) return false;
+          if (alvo.horarios === 'personalizado') {
+            const minIni = toMin(alvo.hora_inicio, 0);
+            const minFim = toMin(alvo.hora_fim, 1440);
+            if (horaMinAtual < minIni || horaMinAtual > minFim) return false;
           }
         }
         

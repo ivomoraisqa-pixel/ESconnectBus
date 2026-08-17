@@ -1397,30 +1397,7 @@ window.Pages.totens = async function() {
     const dataStr = totem.ultima_conexao ? new Date(totem.ultima_conexao).toLocaleTimeString('pt-BR') : 'Agora';
     const tData = encodeURIComponent(JSON.stringify(totem)).replace(/'/g, "%27");
 
-    const agora = new Date();
-    const horaAtual = agora.getHours();
-    const hojeStr = agora.toISOString().split('T')[0];
-
-    const campanhasAlvo = (campanhasAtivas || []).filter(c => {
-      if (!c.totens_alvo) return false;
-      const alvo = c.totens_alvo;
-
-      // 1. Verifica alvo
-      const isTarget = (alvo.tipo === 'todos') || (alvo.tipo === 'individual' && Array.isArray(alvo.ids) && (alvo.ids.includes(totem.id.toString()) || alvo.ids.includes(parseInt(totem.id))));
-      if (!isTarget) return false;
-
-      // 2. Verifica datas
-      if (alvo.data_inicio && hojeStr < alvo.data_inicio) return false;
-      if (alvo.data_fim && hojeStr > alvo.data_fim) return false;
-
-      // 3. Verifica horários
-      if (alvo.horarios) {
-        if (alvo.horarios === 'comercial' && (horaAtual < 8 || horaAtual >= 18)) return false;
-        if (alvo.horarios === 'manha' && (horaAtual < 6 || horaAtual >= 9)) return false;
-        if (alvo.horarios === 'tarde' && (horaAtual < 17 || horaAtual >= 20)) return false;
-      }
-      return true;
-    });
+    const campanhasAlvo = (campanhasAtivas || []).filter(c => window.isCampaignActiveNow(c, totem.id));
 
     const informativosAlvo = informativosList.filter(info => {
       if (!info.totens_alvo || info.totens_alvo.includes('Todos')) return true;
