@@ -58,6 +58,7 @@ O **ESconnectBus** é uma plataforma completa e moderna para gestão de mobilida
 ## 📌 Histórico de Atualizações & Melhorias
 
 ### [16/08/2026]
+- 🕒 **Fuso Horário Local & Precisão por Minuto:** Correção das comparações de datas e horários utilizando o fuso horário local (UTC-3), garantindo que campanhas programadas para o mesmo dia (ex: 22:31 às 22:40) veiculem e encerrem com precisão exata de minutos no Gerenciador de Totens, Simulador e APIs.
 - 🔄 **Preservação de Mídia ao Editar:** Corrigido fluxo de edição para não sobrescrever vídeos ou imagens ao alterar totens alvo ou horários.
 - ⏰ **Horários Personalizados & Valor do Anúncio:** Adicionado seletor de horas customizadas e campo de valor financeiro do anúncio (R$).
 - 🛑 **Encerramento Automático:** Validação de expiração por data e horário alterando status para `ENCERRADA` no Supabase e retirando dos totens.
