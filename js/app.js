@@ -30,9 +30,22 @@
   
   Object.keys(pages).forEach(key => window.Router.register(key, pages[key]));
   
+  const startDigitalClock = () => {
+    const clockEl = document.getElementById('sidebar-digital-clock');
+    const dateEl = document.getElementById('sidebar-digital-date');
+    const update = () => {
+      const agora = new Date();
+      if (clockEl) clockEl.textContent = agora.toLocaleTimeString('pt-BR');
+      if (dateEl) dateEl.textContent = agora.toLocaleDateString('pt-BR');
+    };
+    update();
+    setInterval(update, 1000);
+  };
+
   // Initialize
   document.addEventListener('DOMContentLoaded', () => {
     window.Router.init();
+    startDigitalClock();
     if (window.AppData && window.AppData.startBackgroundPlaybackEngine) {
       window.AppData.startBackgroundPlaybackEngine();
     }
