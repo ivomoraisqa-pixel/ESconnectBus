@@ -10,7 +10,19 @@ window.Router = {
     window.location.hash = hash;
   },
   
+  clearPageIntervals() {
+    if (window.Pages) {
+      if (window.Pages.relatoriosInterval) { clearInterval(window.Pages.relatoriosInterval); window.Pages.relatoriosInterval = null; }
+      if (window.Pages.campanhasInterval) { clearInterval(window.Pages.campanhasInterval); window.Pages.campanhasInterval = null; }
+    }
+    if (window._nocInterval) { clearInterval(window._nocInterval); window._nocInterval = null; }
+    if (window._simInterval) { clearInterval(window._simInterval); window._simInterval = null; }
+    if (window._simCarouselInterval) { clearInterval(window._simCarouselInterval); window._simCarouselInterval = null; }
+    if (window.previewInterval) { clearInterval(window.previewInterval); window.previewInterval = null; }
+  },
+
   async handleRoute() {
+    this.clearPageIntervals();
     const hash = window.location.hash.slice(1) || 'dashboard';
     const route = this.routes[hash];
     

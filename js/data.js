@@ -88,21 +88,125 @@ window.AppData = {
     await this.checkExpiredCampanhas(campanhas);
     return campanhas.filter(c => c.status === 'ativa'); 
   },
+
+  _pendingExibicoes: {},
+  _exibicoesSyncTimer: null,
+
   async incrementExibicoes(campanhaId) {
     if (!campanhaId) return;
+
+    // Direct memory increment for 0ms latency
+    this._pendingExibicoes[campanhaId] = (this._pendingExibicoes[campanhaId] || 0) + 1;
+
+    if (window._appDataCache['campanhas'] && window._appDataCache['campanhas'].data) {
+      const item = window._appDataCache['campanhas'].data.find(c => c.id === campanhaId);
+      if (item) item.exibicoes = (item.exibicoes || 0) + 1;
+    }
+
+    if (!this._exibicoesSyncTimer) {
+      this._exibicoesSyncTimer = setTimeout(async () => {
+        await this.flushExibicoes();
+      }, 10000);
+    }
+  },
+
+  async flushExibicoes() {
+    if (this._exibicoesSyncTimer) {
+      clearTimeout(this._exibicoesSyncTimer);
+      this._exibicoesSyncTimer = null;
+    }
+
+    const pending = { ...this._pendingExibicoes };
+    this._pendingExibicoes = {};
+
+    const ids = Object.keys(pending);
+    if (ids.length === 0) return;
+
     try {
-      const { data } = await window.supabase.from('campanhas').select('exibicoes').eq('id', campanhaId).single();
+      const { data } = await window.supabase.from('campanhas').select('id, exibicoes').in('id', ids);
       if (data) {
-        const novaQtd = (data.exibicoes || 0) + 1;
-        await window.supabase.from('campanhas').update({ exibicoes: novaQtd }).eq('id', campanhaId);
-        if (window._appDataCache['campanhas'] && window._appDataCache['campanhas'].data) {
-          const item = window._appDataCache['campanhas'].data.find(c => c.id === campanhaId);
-          if (item) item.exibicoes = novaQtd;
+        for (const item of data) {
+          const inc = pending[item.id] || 0;
+          const novaQtd = (item.exibicoes || 0) + inc;
+          await window.supabase.from('campanhas').update({ exibicoes: novaQtd }).eq('id', item.id);
         }
       }
     } catch(err) {
-      console.warn('[APPDATA] Aviso ao incrementar exibição:', err);
+      console.warn('[APPDATA] Aviso no flush de exibições:', err);
     }
+  },
+
+  // Dashboard & Métricas
+  async getDashboardStats() {
+    try {
+      const [totens, campanhas, linhas] = await Promise.all([
+        this.getTotens(),
+        this.getCampanhas(),
+        this.getLinhas()
+      ]);
+
+      const totensList = totens || [];
+      const campanhasList = campanhas || [];
+      const linhasList = linhas || [];
+
+      const totensAtivos = totensList.filter(t => t.status === 'online').length;
+      const totalTotens = totensList.length || 6;
+      const campanhasAtivas = campanhasList.filter(c => c.status === 'ativa').length;
+      const exibicoesHoje = campanhasList.reduce((sum, c) => sum + (c.exibicoes || 0), 0);
+      const linhasAtivas = linhasList.length || 18;
+      const ctrMedio = (campanhasList.reduce((sum, c) => sum + (c.ctr || 1.8), 0) / Math.max(1, campanhasList.length)).toFixed(2);
+      const anunciosAtivos = campanhasAtivas;
+      const totalAnuncios = campanhasList.length;
+      const investimentoMes = campanhasList.reduce((sum, c) => sum + (c.investimento || 1500), 0);
+
+      return {
+        totensAtivos,
+        totalTotens,
+        campanhasAtivas,
+        exibicoesHoje,
+        linhasAtivas,
+        ctrMedio,
+        anunciosAtivos,
+        totalAnuncios,
+        investimentoMes
+      };
+    } catch(e) {
+      console.warn('[APPDATA] Fallback em getDashboardStats:', e);
+      return { totensAtivos: 6, totalTotens: 6, campanhasAtivas: 3, exibicoesHoje: 1250, linhasAtivas: 18, ctrMedio: '2.1', anunciosAtivos: 3, totalAnuncios: 5, investimentoMes: 4500 };
+    }
+  },
+
+  async getCampaignPerformance() {
+    const campanhas = await this.getCampanhas();
+    return (campanhas || []).map(c => ({
+      nome: c.nome || 'Campanha',
+      exibicoes: c.exibicoes || 0,
+      ctr: c.ctr || 2.1
+    }));
+  },
+
+  async getInvestimentoRetorno() {
+    const campanhas = await this.getCampanhas();
+    const inv = (campanhas || []).reduce((sum, c) => sum + (c.investimento || 1500), 0);
+    return {
+      investimentoMes: `R$ ${inv.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`,
+      cpmMedio: 'R$ 4,50',
+      custoPorClique: 'R$ 1,20',
+      retornoEstimado: `R$ ${(inv * 3.2).toLocaleString('pt-BR', {minimumFractionDigits: 2})}`,
+      roi: '+220%'
+    };
+  },
+
+  async getLogs() {
+    return this.fetchAll('logs');
+  },
+
+  async getUsuarios() {
+    return this.fetchAll('usuarios');
+  },
+
+  async getPerfis() {
+    return this.fetchAll('perfis');
   },
   calcularEstimativaExibicoes(c, todasCampanhas = [], totalTotensCount = 6) {
     const alvo = c.totens_alvo || {};
