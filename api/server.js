@@ -47,7 +47,10 @@ app.post('/api/transit/sync-station/:stopId', syncStation);
 // ── Também expõe veículos via novo path ──────────────────────
 app.get('/api/transit/vehicles', getGlobalVehicles);
 
+import { startETASimulator } from './services/etaSimulator.js';
+
 app.listen(PORT, () => {
   console.log(`🚀 ITE API Server running on http://localhost:${PORT}`);
   console.log(`📡 Transit Data Mode: ${process.env.TRANSIT_DATA_MODE || 'real'}`);
+  startETASimulator(8000);
 });
