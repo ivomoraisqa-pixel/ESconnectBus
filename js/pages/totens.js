@@ -1381,12 +1381,23 @@ window.Pages.totens = async function() {
 
 
 
-  const [campanhasAtivas, informativosFull] = await Promise.all([
+  const [campanhasAtivas, informativosFull, arrivalsRes] = await Promise.all([
     window.AppData.getCampanhasAtivas ? window.AppData.getCampanhasAtivas() : [],
-    window.AppData.getInformativos ? window.AppData.getInformativos() : []
+    window.AppData.getInformativos ? window.AppData.getInformativos() : [],
+    window.supabase ? window.supabase.from('arrivals').select('*').eq('active', true).order('eta_minutes', { ascending: true }) : Promise.resolve({ data: [] })
   ]);
 
   const informativosList = (informativosFull || []).filter(i => i.titulo && i.status !== 'pausado');
+  const arrivalsData = (arrivalsRes && arrivalsRes.data) ? arrivalsRes.data : [];
+
+  const totemStopMapping = {
+    1: 'ST-TL01',
+    2: 'ST-TJ02',
+    3: 'ST-PMS08',
+    4: 'ST-SM07',
+    5: 'ST-CM03',
+    6: 'ST-HDS06'
+  };
 
   const cardsHTML = totensList.map(totem => {
     let dotClass = 'offline';
@@ -1396,10 +1407,6 @@ window.Pages.totens = async function() {
 
     const dataStr = totem.ultima_conexao ? new Date(totem.ultima_conexao).toLocaleTimeString('pt-BR') : 'Agora';
     const tData = encodeURIComponent(JSON.stringify(totem)).replace(/'/g, "%27");
-
-    const agora = new Date();
-    const horaAtual = agora.getHours();
-    const hojeStr = agora.toISOString().split('T')[0];
 
     const stopCode = totemStopMapping[totem.id] || 'ST-TL01';
     const totemArrivals = arrivalsData.filter(a => a.stop_id === stopCode).slice(0, 3);

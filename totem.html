@@ -1,13 +1,16 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Totem SerraBus</title>
+  <title>Totem SerraBus Conect - Terminal</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/totem.css">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/data.js"></script>
 </head>
 <body>
   <div class="totem-container">
@@ -25,13 +28,13 @@
             <span class="serra">SERRA</span>
           </div>
         </div>
-        <span class="location">Terminal de Laranjeiras</span>
+        <span class="location" id="totem-location-name">Carregando Estação...</span>
       </div>
       <div class="time-weather">
-        <span class="time" id="clock">14:32</span>
-        <span class="date" id="date">Qui, 25 de Julho</span>
+        <span class="time" id="clock">--:--</span>
+        <span class="date" id="date">Carregando data...</span>
         <div class="weather">
-          <span>28Â°C</span>
+          <span id="weather-temp">28°C</span>
           <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
         </div>
         <span class="air-quality">Qualidade do Ar: Boa</span>
@@ -40,11 +43,11 @@
 
     <!-- Bus Section -->
     <div class="totem-bus-section">
-      PRÃ“XIMOS Ã”NIBUS
+      PRÓXIMOS ÔNIBUS
     </div>
     <div class="bus-list" id="dynamic-bus-list">
-      <div style="padding: 20px; text-align: center; color: rgba(255,255,255,0.7); font-size: 14px;">
-        Conectando ao Intelligent Transit Engine...
+      <div style="padding: 24px; text-align: center; color: rgba(255,255,255,0.7); font-size: 15px;">
+        Conectando ao sistema de trânsito em tempo real...
       </div>
     </div>
 
@@ -52,7 +55,7 @@
     <div class="totem-map">
       <h3>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-        MAPA DE LINHAS
+        MAPA DE LINHAS EM TEMPO REAL
       </h3>
       <div id="totem-map" style="width: 100%; height: 100%; background: #1a1a1a; border-radius: 12px; overflow: hidden; position: relative;"></div>
     </div>
@@ -65,7 +68,7 @@
       </div>
       <div class="totem-feature">
         <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-        <span>ConfiÃ¡vel</span>
+        <span>Confiável</span>
       </div>
       <div class="totem-feature">
         <svg viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
@@ -74,18 +77,18 @@
     </div>
 
     <!-- Info Bar -->
-    <div class="totem-info-bar">
+    <div class="totem-info-bar" id="totem-info-bar">
       <div class="totem-info-item">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-        <span>Informativos<br>Prefeitura</span>
+        <span id="totem-info-msg">Informativos<br>Prefeitura da Serra</span>
       </div>
       <div class="totem-info-item">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-        <span>Fale Conosco<br>156</span>
+        <span>Fale Conosco<br>Disque 156</span>
       </div>
       <div class="totem-info-item">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        <span>SeguranÃ§a<br>Garantida</span>
+        <span>Segurança<br>Monitorada</span>
       </div>
     </div>
 
@@ -97,7 +100,7 @@
       <div class="wifi">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
         <div class="wifi-text">
-          <span class="wifi-strong">Wi-Fi GrÃ¡tis</span>
+          <span class="wifi-strong">Wi-Fi Grátis</span>
           <span>Conecte-se</span>
         </div>
       </div>
@@ -105,25 +108,28 @@
   </div>
 
   <script>
-    // â”€â”€ RelÃ³gio â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Relógio em Tempo Real ──────────────────────────────────────────
     function updateClock() {
       const now = new Date();
-      document.getElementById('clock').textContent = now.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
-      document.getElementById('date').textContent  = now.toLocaleDateString('pt-BR', { weekday:'long', day:'2-digit', month:'long' });
+      document.getElementById('clock').textContent = now.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+      const options = { weekday:'long', day:'2-digit', month:'long', year:'numeric' };
+      const dateStr = now.toLocaleDateString('pt-BR', options);
+      document.getElementById('date').textContent = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
     }
     setInterval(updateClock, 1000);
     updateClock();
 
-    // â”€â”€ ConfiguraÃ§Ã£o â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    const TOTEM_ID = 1;
-    const API_URL  = `http://localhost:3000/api/v1/transport/totem/${TOTEM_ID}`;
+    // ── Configuração do Totem ─────────────────────────────────────────
+    const urlParams = new URLSearchParams(window.location.search);
+    const TOTEM_ID  = parseInt(urlParams.get('id') || urlParams.get('totem_id') || '7', 10);
+    const API_URL   = `http://localhost:3000/api/v1/transport/totem/${TOTEM_ID}`;
     const busListEl = document.getElementById('dynamic-bus-list');
 
-    // â”€â”€ Mapa Leaflet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Mapa Leaflet ───────────────────────────────────────────────────
     const map = L.map('totem-map', { zoomControl:false, attributionControl:false }).setView([-20.2108, -40.2573], 14);
     L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom:19 }).addTo(map);
 
-    // Marcador fixo do totem
+    // Marcador do Totem
     const totemIcon = L.divIcon({
       className: 'totem-self-marker',
       html: `<svg viewBox="0 0 24 24" style="width:32px;height:32px;" stroke="#2D9B5A" stroke-width="2" fill="#fff"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3" fill="#2D9B5A"/></svg>`,
@@ -131,78 +137,107 @@
     });
     let totemMarker = L.marker([-20.2108, -40.2573], {icon: totemIcon}).addTo(map);
 
-    let vehicleMarkers = {}; // cache de marcadores de Ã´nibus no mapa
-    let stationRouteIds = []; // route_ids autorizados para esta estaÃ§Ã£o
+    let vehicleMarkers = {};
+    let stationRouteIds = [];
 
-    // Cria Ã­cone de Ã´nibus no mapa
     const busIconHtml = (line, color) => `
-      <div style="background:#${color||'3B82F6'};color:white;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;border:2px solid white;box-shadow:0 0 8px rgba(0,0,0,0.4);">${line}</div>`;
+      <div style="background:#${color||'3B82F6'};color:white;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;border:2px solid white;box-shadow:0 0 8px rgba(0,0,0,0.5);">${line}</div>`;
 
-    // â”€â”€ Fetch Principal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Carrega Informativos da Prefeitura ────────────────────────────
+    async function loadInformativos() {
+      try {
+        if (window.AppData && window.AppData.getInformativos) {
+          const infos = await window.AppData.getInformativos();
+          const ativos = (infos || []).filter(i => i.ativo !== false && i.status !== 'pausado');
+          if (ativos.length > 0) {
+            const first = ativos[0];
+            const msgEl = document.getElementById('totem-info-msg');
+            if (msgEl) msgEl.innerHTML = `<strong>${first.titulo}</strong><br>${(first.mensagem || '').substring(0, 45)}...`;
+          }
+        }
+      } catch (e) {
+        console.warn('[TOTEM] Erro ao carregar informativos:', e);
+      }
+    }
+    loadInformativos();
+
+    // ── Fetch Principal de Trânsito ───────────────────────────────────
     async function fetchTransitData() {
       let data = null;
+
+      // 1. Tenta API do Backend
       try {
-        const res = await fetch(API_URL, { signal: AbortSignal.timeout(8000) });
+        const res = await fetch(API_URL, { signal: AbortSignal.timeout(4000) });
         if (res.ok) data = await res.json();
       } catch (err) {
-        console.warn('[TOTEM] API indisponÃ­vel:', err.message);
-      }
-
-      // Sem dados reais: exibe mensagem de conexÃ£o (NÃƒO usa mock de linhas)
-      if (!data) {
-        busListEl.innerHTML = `
-          <div style="padding:24px;text-align:center;color:rgba(255,255,255,0.6);font-size:16px;">
-            <div style="font-size:32px;margin-bottom:12px;">ðŸ“¡</div>
-            Conectando ao servidor de transporte...
-          </div>`;
-        return;
-      }
-
-      // EstaÃ§Ã£o vinculada ao totem
-      if (data.stop?.name) {
-        const locEl = document.querySelector('.location');
-        if (locEl) locEl.textContent = data.stop.name;
-        // Centraliza o mapa na estaÃ§Ã£o
-        if (data.stop.lat && data.stop.lng) {
-          map.setView([data.stop.lat, data.stop.lng], 14);
-          totemMarker.setLatLng([data.stop.lat, data.stop.lng]);
+        // 2. Fallback direto via Supabase se API REST não responder
+        if (window.AppData && window.AppData.getTotemTransitData) {
+          try {
+            data = await window.AppData.getTotemTransitData(TOTEM_ID);
+          } catch(e2) {
+            console.warn('[TOTEM] Fallback Supabase falhou:', e2);
+          }
         }
       }
 
-      // Sem linhas vinculadas
-      if (!data.lines || data.lines.length === 0) {
+      if (!data) {
         busListEl.innerHTML = `
-          <div style="padding:24px;text-align:center;color:rgba(255,255,255,0.6);font-size:16px;">
-            ${data.message || data.error_transit || 'Nenhuma linha cadastrada para esta estaÃ§Ã£o.'}
+          <div style="padding:24px;text-align:center;color:rgba(255,255,255,0.7);font-size:15px;">
+            <div style="font-size:32px;margin-bottom:10px;">📡</div>
+            Sincronizando com o Centro de Controle Operacional...
           </div>`;
         return;
       }
 
-      // Guarda route_ids autorizados para filtrar veÃ­culos no mapa
-      stationRouteIds = (data.lines || []).map(l => l.route_id);
+      // Nome da estação / Totem
+      const locEl = document.getElementById('totem-location-name');
+      const stationName = data.stop?.name || data.totem_name || 'Terminal de Transporte';
+      if (locEl) locEl.textContent = stationName;
 
-      // Renderiza lista de prÃ³ximos Ã´nibus â€” APENAS os da estaÃ§Ã£o
+      // Centraliza mapa
+      if (data.stop?.lat && data.stop?.lng) {
+        map.setView([data.stop.lat, data.stop.lng], 14);
+        totemMarker.setLatLng([data.stop.lat, data.stop.lng]);
+        totemMarker.bindPopup(`<b>${stationName}</b><br/>Você está aqui`).openPopup();
+      }
+
+      // Linhas de ônibus vinculadas
+      if (!data.lines || data.lines.length === 0) {
+        busListEl.innerHTML = `
+          <div style="padding:24px;text-align:center;color:rgba(255,255,255,0.7);font-size:15px;">
+            Nenhuma linha em operação para este ponto no momento.
+          </div>`;
+        return;
+      }
+
+      stationRouteIds = (data.lines || []).map(l => l.route_id || l.line);
+
+      // Renderiza lista de próximos ônibus reais
       busListEl.innerHTML = '';
       data.lines.forEach(l => {
-        const etaLabel  = l.eta_minutes !== null ? `${l.eta_minutes.toString().padStart(2,'0')} MIN` : 'SEM PREVISÃƒO';
-        const distLabel = l.distance_km !== null ? `${l.distance_km.toFixed(1)} km` : '';
-        const bgColor   = '#' + (l.color || '3B82F6').replace('#','');
+        const etaLabel  = l.eta_minutes !== null && l.eta_minutes !== undefined
+          ? `${l.eta_minutes.toString().padStart(2,'0')} MIN`
+          : 'PREVISTO';
+        const distLabel = l.distance_km !== null && l.distance_km !== undefined ? `${l.distance_km.toFixed(1)} km` : '';
+        const bgColor   = '#' + (l.color || '2D9B5A').replace('#','');
+        const isArriving = l.eta_minutes !== null && l.eta_minutes <= 3;
+        
         busListEl.innerHTML += `
-          <div class="bus-item">
-            <div class="bus-number" style="background-color:${bgColor};">${l.line}</div>
-            <div class="bus-destination">${l.name || l.direction || 'Destino'}</div>
+          <div class="bus-item ${isArriving ? 'bus-arriving' : ''}">
+            <div class="bus-number" style="background-color:${bgColor};">${l.line || l.route_id}</div>
+            <div class="bus-destination">${l.name || l.direction || 'Transcol Serra'}</div>
             <div class="bus-meta">
-              <div class="bus-time">${etaLabel}</div>
+              <div class="bus-time" style="${isArriving ? 'color:#10B981;font-weight:800;' : ''}">${etaLabel}</div>
               ${distLabel ? `<div class="bus-distance">${distLabel}</div>` : ''}
             </div>
           </div>`;
       });
 
-      // Atualiza veÃ­culos no MAPA â€” FILTRO CRÃTICO: apenas route_ids da estaÃ§Ã£o
+      // Atualiza veículos em movimento no mapa
       const vehicles = (data.vehicles || []).filter(v => stationRouteIds.includes(v.route_id));
       const activeIds = new Set(vehicles.map(v => v.vehicle_id));
 
-      // Remove marcadores de veÃ­culos que saÃ­ram
+      // Remove marcadores inativos
       Object.keys(vehicleMarkers).forEach(vid => {
         if (!activeIds.has(vid)) {
           map.removeLayer(vehicleMarkers[vid].marker);
@@ -212,14 +247,16 @@
 
       vehicles.forEach(v => {
         if (!v.latitude || !v.longitude) return;
-        const line  = data.lines.find(l => l.route_id === v.route_id);
-        const color = line?.color || '3B82F6';
+        const lineInfo  = data.lines.find(l => (l.route_id === v.route_id || l.line === v.route_id));
+        const color = lineInfo?.color || '2D9B5A';
+        const lineCode = lineInfo?.line || v.route_id;
+
         if (vehicleMarkers[v.vehicle_id]) {
           vehicleMarkers[v.vehicle_id].marker.setLatLng([v.latitude, v.longitude]);
         } else {
           const icon = L.divIcon({
             className: 'moving-bus-marker',
-            html: busIconHtml(line?.line || v.route_id, color.replace('#','')),
+            html: busIconHtml(lineCode, color.replace('#','')),
             iconSize:[36,36], iconAnchor:[18,18]
           });
           vehicleMarkers[v.vehicle_id] = {
@@ -230,7 +267,7 @@
     }
 
     fetchTransitData();
-    setInterval(fetchTransitData, 15000); // atualiza a cada 15s
+    setInterval(fetchTransitData, 8000); // Atualiza dados reais a cada 8 segundos
   </script>
 </body>
 </html>
